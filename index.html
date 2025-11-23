@@ -1,0 +1,1090 @@
+<!-- 抽選管理ツール v1.8.2（フル版：動作修正） -->
+<!-- ▼ Firebase（設定すれば優先） -->
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+<!-- ▲ Firebase -->
+
+<style>
+  .lotto-wrap{--bg:#fff;--ink:#0f172a;--muted:#475569;--line:#cbd5e1;--lineStrong:#94a3b8;--ok:#16a34a;--warn:#d97706;--danger:#dc2626;--chip:#f1f5f9;--radius:14px;--shadow:0 6px 18px rgba(15,23,42,.06);--url:#0ea5e9;--soft:#e0f2fe;--softBorder:#bae6fd;--softText:#075985;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;color:var(--ink)}
+  .lotto-wrap *{box-sizing:border-box}
+  .lotto-container{max-width:1100px;margin:24px auto;padding:0 16px}
+
+  .lotto-card{background:var(--bg);border:1.5px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin:18px 0}
+  .lotto-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:16px;border-bottom:1.5px solid var(--line)}
+  .lotto-title{font-weight:700;font-size:18px}
+  .lotto-deadline{font-size:13px;color:var(--muted)}
+  .deadline-flex{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .deadline-field{display:flex;align-items:center;gap:6px}
+  .deadline-field .f-label{font-size:12px;color:var(--muted);white-space:nowrap}
+  .lotto-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+  .lotto-badge{display:inline-flex;align-items:center;gap:6px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:999px;padding:6px 10px;font-size:12px;color:#3730a3}
+  .lotto-btn{appearance:none;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer}
+  .lotto-btn.mini{padding:6px 10px;font-size:12px}
+  .lotto-btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+  .lotto-btn.ghost{background:#fff}
+  .lotto-btn.warn{background:#d97706;border-color:#d97706;color:#fff}
+  .lotto-btn.danger{background:#dc2626;border-color:#dc2626;color:#fff}
+  .lotto-btn.url{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
+  .lotto-btn.url[aria-disabled="true"]{background:#e5e7eb;border-color:#e5e7eb;color:#9ca3af}
+  .lotto-btn.soft-primary{background:var(--soft);border-color:var(--softBorder);color:var(--softText)}
+  .lotto-btn:disabled{opacity:.5;cursor:not-allowed}
+
+  .lotto-body{padding:12px 16px 18px}
+  .form-lead{font-weight:700;font-size:15px;margin:0 0 6px;color:#0f172a}
+
+  .lotto-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .lotto-field{display:flex;flex-direction:column;gap:6px}
+  .lotto-field label{font-size:12px;color:var(--muted)}
+  .lotto-input,.lotto-select,.lotto-date{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+  .lotto-input{min-height:42px}
+  .lotto-hint{font-size:12px;color:var(--muted)}
+
+  /* テーブル（視認性UP） */
+  .lotto-table{width:100%;border-collapse:separate;border-spacing:0;overflow:clip;border:2px solid var(--lineStrong);border-radius:12px;table-layout:auto}
+  .lotto-table th,.lotto-table td{padding:10px 8px;border-bottom:1.5px solid var(--line);font-size:14px;vertical-align:middle}
+  .lotto-table thead th{background:#f8fafc;color:#334155;font-weight:700;border-bottom:2px solid var(--lineStrong)}
+  .lotto-table tr:last-child td{border-bottom:none}
+  .lotto-row-actions{display:flex;gap:6px;justify-content:flex-end}
+
+  /* バッジ */
+  .lotto-subhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}
+  .lotto-counts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .count-badge{background:#f8fafc;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;white-space:nowrap}
+  .count-badge.tap{cursor:pointer}
+  .count-badge.is-summary{padding:4px 8px}
+  .count-badge.is-summary small{opacity:.8}
+
+  .status-chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);padding:4px 10px;border-radius:999px;font-size:12px;color:#334155}
+  .status-dot{width:8px;height:8px;border-radius:999px;display:inline-block}
+  .dot-win{background:var(--ok)} .dot-lose{background:#dc2626} .dot-pend{background:#64748b}
+  .status-chip.chip-win{background:#dcfce7;color:#166534}
+  .status-chip.chip-lose{background:#fee2e2;color:#7f1d1d}
+  .status-chip.chip-pend{background:#e2e8f0;color:#334155}
+
+  /* 行色（PC） */
+  .lotto-table tbody tr[data-status="未実施"]{ background:#f1f5f9 }
+  .lotto-table tbody tr[data-status="未当選"]{ background:#fee2e2 }
+
+  /* 並び替えメニュー */
+  .sort-group{position:relative}
+  .sort-menu{position:absolute;left:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.12);min-width:180px;padding:6px;display:none;z-index:100}
+  .sort-menu[aria-hidden="false"]{display:block}
+  .sort-item{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:none;background:transparent;padding:10px;border-radius:10px;cursor:pointer;text-align:left;font-size:14px}
+  .sort-item:hover{background:#f8fafc}
+  .sort-check{opacity:.7}
+
+  /* モバイル */
+  @media (max-width:600px){
+    .lotto-grid{grid-template-columns:1fr}
+    .lotto-head{align-items:flex-start}
+    .lotto-table thead{display:none}
+    .lotto-table, .lotto-table tbody, .lotto-table tr, .lotto-table td{display:block;width:100%}
+    .lotto-table{border:none}
+    .lotto-table tr{border:2px solid var(--lineStrong);border-radius:12px;padding:10px;margin:10px 0;background:#fff}
+    .lotto-table td{border:none;padding:8px 0;display:flex;align-items:center;gap:10px}
+    .lotto-table td::before{content:attr(data-label);flex:0 0 92px;font-size:12px;color:#64748b}
+    .lotto-table td[data-label=""]::before{content:none;display:none} /* コンパクト行 */
+    .lotto-table tr[data-status="未実施"]{ background:#f1f5f9 }
+    .lotto-table tr[data-status="未当選"]{ background:#fee2e2 }
+  }
+
+  /* モーダル */
+  .lotto-modal{position:fixed;inset:0;display:none}
+  .lotto-modal[aria-hidden="false"]{display:block}
+  .lotto-modal .backdrop{position:absolute;inset:0;background:rgba(15,23,42,.45)}
+  .lotto-modal .panel{position:relative;max-width:760px;margin:7vh auto;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+  .lotto-modal .m-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1.5px solid var(--line)}
+  .lotto-modal .m-title{font-weight:700}
+  .lotto-modal .m-body{max-height:65vh;overflow:auto;padding:12px 16px}
+  .lotto-modal .m-empty{color:var(--muted);font-size:14px;padding:12px}
+
+  /* 入出力メニュー */
+  .io-group{position:relative}
+  .io-menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.12);min-width:180px;padding:6px;display:none;z-index:100}
+  .io-menu[aria-hidden="false"]{display:block}
+  .io-item{display:flex;align-items:center;gap:8px;width:100%;border:none;background:transparent;padding:10px;border-radius:10px;cursor:pointer;text-align:left;font-size:14px}
+  .io-item:hover{background:#f8fafc}
+  .io-sep{height:1px;background:var(--line);margin:4px 2px}
+  .io-item[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+  .io-hidden-input{display:none}
+</style>
+
+<div class="lotto-wrap">
+  <div class="lotto-container">
+    <!-- ヘッダー／ユーティリティ -->
+    <div class="lotto-card">
+      <div class="lotto-head">
+        <div class="lotto-title">抽選管理</div>
+        <div class="lotto-actions">
+          <span class="lotto-badge" id="lockBadge">編集ロック: <strong id="lockState">OFF</strong></span>
+          <button class="lotto-btn ghost" id="lockToggleBtn">編集ロック切替</button>
+          <button class="lotto-btn ghost" id="checkRolloverBtn" title="JSTで0:00の自動更新を手動実行">日付更新</button>
+
+          <!-- 入出力メニュー -->
+          <div class="io-group" id="ioGroup">
+            <button class="lotto-btn ghost" id="ioMenuBtn" aria-expanded="false" aria-controls="ioMenu">入出力 ▾</button>
+            <div class="io-menu" id="ioMenu" aria-hidden="true" role="menu">
+              <button class="io-item" id="exportBtn" role="menuitem">エクスポート</button>
+              <label class="io-item" for="importFile" role="menuitem" id="importLabel">インポート<input id="importFile" class="io-hidden-input" type="file" accept="application/json"></label>
+              <div class="io-sep"></div>
+              <button class="io-item" id="showArchiveBtn" role="menuitem">アーカイブON/OFF</button>
+            </div>
+          </div>
+
+          <!-- 同期UI -->
+          <div class="sync-group" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span class="lotto-badge" id="syncBadge">同期: <strong id="syncState">未接続</strong></span>
+            <input class="lotto-input ws-input" id="wsCode" placeholder="共有コード" style="width:160px;min-height:auto;padding:8px 10px;border-radius:999px">
+            <button class="lotto-btn ghost" id="wsConnectBtn">接続</button>
+            <button class="lotto-btn ghost" id="wsDisconnectBtn">切断</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="lotto-body">
+        <div class="form-lead">新規抽選カード</div>
+        <div class="lotto-grid" id="addForm">
+          <div class="lotto-field">
+            <label>タイトル</label>
+            <input class="lotto-input" id="newTitle" placeholder="例）アサヒ生ビール 20万名キャンペーン" autocapitalize="off" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="lotto-field">
+            <label>抽選期限（当落確定日）</label>
+            <input type="date" class="lotto-date" id="newDrawDate">
+            <div class="lotto-hint">0:00の更新：期限越えは「未実施→未当選」、それ以外は「未当選→未実施」。</div>
+          </div>
+          <div class="lotto-field">
+            <label>引換期限</label>
+            <input type="date" class="lotto-date" id="newRedeemDate">
+            <div class="lotto-hint">この日を過ぎるとカードに「アーカイブ/削除」ボタンが出ます。</div>
+          </div>
+          <div class="lotto-field">
+            <label>応募URL（任意）</label>
+            <input type="url" class="lotto-input" id="newApplyUrl" placeholder="example.com/...">
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="lotto-btn primary" id="addLotteryBtn">＋ 抽選を追加</button>
+          <div class="lotto-hint">URLはカードの「抽選URL」から開く／編集（未設定はタップで編集、設定済みは長押しで編集）。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ダッシュボード -->
+    <div class="lotto-card" id="dashboardCard">
+      <div class="lotto-head"><div class="lotto-title">ダッシュボード</div></div>
+      <div class="lotto-body"><div id="dashboard"></div></div>
+    </div>
+
+    <!-- 一覧ツールバー（並び替え＋絞り込み） -->
+    <div class="lotto-card">
+      <div class="lotto-head">
+        <div class="lotto-title">一覧</div>
+        <div class="lotto-actions toolbar">
+          <div class="sort-group" id="sortGroup">
+            <button class="lotto-btn ghost" id="sortBtn">&#x2195; 並び替え</button>
+            <div class="sort-menu" id="sortMenu" aria-hidden="true">
+              <button class="sort-item" data-sort="created">登録順 <span class="sort-check" data-check="created" hidden>✓</span></button>
+              <button class="sort-item" data-sort="draw">抽選期日順 <span class="sort-check" data-check="draw" hidden>✓</span></button>
+            </div>
+          </div>
+          <button class="lotto-btn ghost" id="openFilterBtn">絞り込み</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 抽選カード一覧 -->
+    <div id="lotteryList"></div>
+
+    <!-- アーカイブ -->
+    <div class="lotto-card" id="archiveCard" style="display:none">
+      <div class="lotto-head"><div class="lotto-title">アーカイブ済み</div></div>
+      <div class="lotto-body" id="archiveList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ステータス詳細モーダル（当選/未当選/未実施） -->
+<div class="lotto-modal" id="statusModal" aria-hidden="true">
+  <div class="backdrop" data-modal-close></div>
+  <div class="panel">
+    <div class="m-head"><div class="m-title" id="statusTitle">ステータス詳細</div><button class="lotto-btn" id="statusCloseBtn" data-modal-close>閉じる</button></div>
+    <div class="m-body" id="statusBody"></div>
+  </div>
+</div>
+
+<!-- 絞り込みモーダル -->
+<div class="lotto-modal" id="filterModal" aria-hidden="true">
+  <div class="backdrop" data-modal-close></div>
+  <div class="panel">
+    <div class="m-head"><div class="m-title">絞り込み</div><button class="lotto-btn" id="filterCloseBtn" data-modal-close>閉じる</button></div>
+    <div class="m-body">
+      <div class="filter-bar" style="margin-top:0;display:flex;gap:10px;flex-wrap:wrap">
+        <select class="lotto-select" id="filterDevice"><option value="">端末名で絞り込み（全て）</option></select>
+        <select class="lotto-select" id="filterTitle"><option value="">タイトルで絞り込み（全て）</option></select>
+        <button class="lotto-btn" id="applyFilterBtn">絞り込み</button>
+        <button class="lotto-btn" id="resetFilterBtn">リセット</button>
+      </div>
+      <div id="filterResult" class="filter-result" style="display:none;border:1px dashed var(--line);border-radius:12px;padding:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Undoトースト -->
+<div class="lotto-toast" id="undoToast" aria-hidden="true">
+  <div class="toast-body" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px">
+    <span class="msg" id="undoMsg"></span>
+    <button class="lotto-btn" id="undoBtn">取り消す</button>
+  </div>
+  <div class="toast-progress" style="height:3px;background:#374151"><div class="bar" id="undoProg" style="height:3px;width:100%;background:#60a5fa;transition:width .1s linear"></div></div>
+</div>
+
+<script>
+(function(){
+  /* ====== 設定 ====== */
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCY1HEl2X3pr1xTUaoIwBJqX384zKb-F4U",
+    authDomain: "zeroichi-lottery.firebaseapp.com",
+    projectId: "zeroichi-lottery",
+  };
+  const GH_PROXY_BASE = "YOUR_WORKER_ENDPOINT"; // 使わないならそのままでOK
+  const GH_POLL_MS = 2000;
+  /* ================== */
+
+  const LS_KEY = 'lotteryManager_v1';
+  const TZ = 'Asia/Tokyo';
+
+  const el = {
+    newTitle: document.getElementById('newTitle'),
+    newDrawDate: document.getElementById('newDrawDate'),
+    newRedeemDate: document.getElementById('newRedeemDate'),
+    newApplyUrl: document.getElementById('newApplyUrl'),
+    addLotteryBtn: document.getElementById('addLotteryBtn'),
+    lotteryList: document.getElementById('lotteryList'),
+    filterDevice: document.getElementById('filterDevice'),
+    filterTitle: document.getElementById('filterTitle'),
+    applyFilterBtn: document.getElementById('applyFilterBtn'),
+    resetFilterBtn: document.getElementById('resetFilterBtn'),
+    filterResult: document.getElementById('filterResult'),
+    checkRolloverBtn: document.getElementById('checkRolloverBtn'),
+    exportBtn: document.getElementById('exportBtn'),
+    importFile: document.getElementById('importFile'),
+    importLabel: document.getElementById('importLabel'),
+    archiveCard: document.getElementById('archiveCard'),
+    archiveList: document.getElementById('archiveList'),
+    showArchiveBtn: document.getElementById('showArchiveBtn'),
+    dashboard: document.getElementById('dashboard'),
+    lockToggleBtn: document.getElementById('lockToggleBtn'),
+    lockBadge: document.getElementById('lockBadge'),
+    lockState: document.getElementById('lockState'),
+    undoToast: document.getElementById('undoToast'),
+    undoMsg: document.getElementById('undoMsg'),
+    undoBtn: document.getElementById('undoBtn'),
+    undoProg: document.getElementById('undoProg'),
+    wsCode: document.getElementById('wsCode'),
+    wsConnectBtn: document.getElementById('wsConnectBtn'),
+    wsDisconnectBtn: document.getElementById('wsDisconnectBtn'),
+    syncBadge: document.getElementById('syncBadge'),
+    syncState: document.getElementById('syncState'),
+    ioMenuBtn: document.getElementById('ioMenuBtn'),
+    ioMenu: document.getElementById('ioMenu'),
+    ioGroup: document.getElementById('ioGroup'),
+
+    // 追加
+    statusModal: document.getElementById('statusModal'),
+    statusBody: document.getElementById('statusBody'),
+    statusTitle: document.getElementById('statusTitle'),
+    statusCloseBtn: document.getElementById('statusCloseBtn'),
+
+    filterModal: document.getElementById('filterModal'),
+    filterCloseBtn: document.getElementById('filterCloseBtn'),
+    openFilterBtn: document.getElementById('openFilterBtn'),
+
+    sortBtn: document.getElementById('sortBtn'),
+    sortMenu: document.getElementById('sortMenu'),
+    sortGroup: document.getElementById('sortGroup'),
+  };
+
+  let store = loadLocal();
+  let undo = { timer:null, kind:null, payload:null, startedAt:0, dur:5000 };
+  let lp = { timer:null, target:null, fired:false, delay:600 }; // URL長押し編集
+  let sortMode = localStorage.getItem(LS_KEY+'_sort') || 'draw';
+
+  // バックエンド選択
+  const backend = detectBackend();
+  const sync = {
+    enabled:false, connected:false, isApplyingRemote:false,
+    clientId: 'cli_' + Math.random().toString(36).slice(2),
+    firebaseReady:false, app:null, db:null, docRef:null, unsub:null,
+    ghBase:null, ghCode:null, ghEtag:null, ghTimer:null,
+  };
+
+  /* ---------- Utils ---------- */
+  function ymdJST(d=new Date()){
+    const s=d.toLocaleDateString('ja-JP',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'});
+    const [y,m,da]=s.split('/'); return `${y}-${m.padStart(2,'0')}-${da.padStart(2,'0')}`;
+  }
+  function todayYMD(){ return ymdJST(new Date()); }
+  function toYMD(v){ return (v||'').slice(0,10); }
+  function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
+  function escapeHtml(str){ return (str??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function escapeAttr(str){ return escapeHtml(str).replace(/"/g,'&quot;'); }
+  function cmpDate(a,b){ if(!a||!b) return 0; return a<b?-1:a>b?1:0; }
+  function ymdToUTC(ymd){ const [y,m,d]=(ymd||'').split('-').map(n=>parseInt(n||0,10)); return isNaN(y)?NaN:Date.UTC(y,m-1,d); }
+  function diffDays(from,to){ const a=ymdToUTC(from), b=ymdToUTC(to); if(isNaN(a)||isNaN(b)) return NaN; return Math.round((b-a)/(24*60*60*1000)); }
+  function normalizeUrl(u){ const s=(u||'').trim(); if(!s) return ''; return /^https?:\/\//i.test(s)?s:'https://'+s; }
+  function debounce(fn,ms){ let t=null; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args),ms); }; }
+
+  /* ---------- LocalStorage ---------- */
+  function loadLocal(){
+    const def={version:1,lastDate:todayYMD(),lotteries:[],archived:[],locked:false};
+    try{
+      const raw=localStorage.getItem(LS_KEY);
+      if(!raw) return def;
+      const s=JSON.parse(raw);
+      s.version??=1; s.lastDate??=todayYMD(); s.lotteries??=[]; s.archived??=[]; s.locked??=false;
+      [...s.lotteries,...s.archived].forEach(l=>{ l.applyUrl??=''; l.collapsed??=true; });
+      return s;
+    }catch(e){ return def; }
+  }
+  function saveLocal(){ localStorage.setItem(LS_KEY, JSON.stringify(store)); }
+
+  /* ---------- Backend ---------- */
+  function detectBackend(){
+    const hasFirebase = FIREBASE_CONFIG && FIREBASE_CONFIG.projectId && !/YOUR_/i.test(FIREBASE_CONFIG.projectId);
+    const hasGithub   = GH_PROXY_BASE && !/YOUR_/i.test(GH_PROXY_BASE);
+    return hasFirebase ? 'firebase' : (hasGithub ? 'github' : 'local');
+  }
+  function updateSyncBadge(){
+    const mode=(backend==='firebase'?'Firebase':(backend==='github'?'GitHub':'ローカル'));
+    el.syncState.textContent = sync.connected ? `${mode}接続中` : `${mode}未接続`;
+  }
+
+  /* ---------- Firebase 初期化（匿名Auth付き） ---------- */
+  try{
+    if(backend==='firebase'){
+      sync.app = firebase.initializeApp(FIREBASE_CONFIG);
+      sync.db  = firebase.firestore();
+      firebase.auth().signInAnonymously().catch(console.warn); // 匿名でログイン
+      sync.firebaseReady = true;
+    }
+  }catch(e){ sync.firebaseReady=false; }
+
+  async function fbConnect(code){
+    try{
+      if(!sync.firebaseReady){ alert('Firebase設定が未完了です。'); return; }
+      if(!code){ alert('共有コードを入力してください'); return; }
+      if(sync.unsub){ sync.unsub(); sync.unsub=null; }
+      sync.docRef = sync.db.collection('workspaces').doc(code);
+
+      const snap = await sync.docRef.get();
+      if(!snap.exists){
+        const seed=JSON.parse(JSON.stringify(store));
+        seed._updatedAt=Date.now(); seed._by=sync.clientId;
+        await sync.docRef.set(seed);
+      }else{
+        sync.isApplyingRemote=true;
+        store=migrateRemote(snap.data());
+        saveLocal(); renderAll();
+        sync.isApplyingRemote=false;
+      }
+
+      sync.unsub = sync.docRef.onSnapshot(doc=>{
+        if(!doc.exists) return;
+        const data=doc.data()||{};
+        if(data._by===sync.clientId) return;
+        sync.isApplyingRemote=true;
+        store=migrateRemote(data);
+        saveLocal(); renderAll();
+        sync.isApplyingRemote=false;
+      }, err=>{
+        alert('Firestore購読エラー: ' + (err?.message || err));
+      });
+
+      sync.enabled=true; sync.connected=true;
+      localStorage.setItem(LS_KEY+'_ws', code);
+      updateSyncBadge();
+    }catch(err){
+      console.error(err);
+      alert('接続できませんでした: ' + (err?.message || err));
+    }
+  }
+  function fbDisconnect(){
+    if(sync.unsub){ sync.unsub(); sync.unsub=null; }
+    sync.enabled=false; sync.connected=false; localStorage.removeItem(LS_KEY+'_ws');
+    updateSyncBadge();
+  }
+
+  /* ---------- GitHub プロキシ（任意） ---------- */
+  async function ghConnect(code){
+    if(!GH_PROXY_BASE || /YOUR_/i.test(GH_PROXY_BASE)){ alert('GH_PROXY_BASE が未設定です'); return; }
+    if(!code){ alert('共有コードを入力してください'); return; }
+    ghStop();
+    sync.ghBase=GH_PROXY_BASE.replace(/\/+$/,''); sync.ghCode=code; sync.ghEtag=null;
+
+    const res0=await ghGet();
+    if(res0.status===404){ await ghPut(store); }
+    else if(res0.status===200){
+      sync.isApplyingRemote=true;
+      store=migrateRemote(res0.data); saveLocal(); renderAll();
+      sync.isApplyingRemote=false;
+      sync.ghEtag=res0.etag||null;
+    }
+    sync.ghTimer=setInterval(async ()=>{
+      const r=await ghGet(true);
+      if(r.status===200){
+        sync.isApplyingRemote=true;
+        store=migrateRemote(r.data); saveLocal(); renderAll();
+        sync.isApplyingRemote=false;
+        sync.ghEtag=r.etag||sync.ghEtag;
+      }
+    }, GH_POLL_MS);
+
+    sync.enabled=true; sync.connected=true;
+    localStorage.setItem(LS_KEY+'_ws', code);
+    updateSyncBadge();
+  }
+  function ghStop(){
+    if(sync.ghTimer){ clearInterval(sync.ghTimer); sync.ghTimer=null; }
+    sync.enabled=false; sync.connected=false; sync.ghEtag=null; localStorage.removeItem(LS_KEY+'_ws');
+  }
+  async function ghGet(silent){
+    try{
+      const url=`${sync.ghBase}/ws/${encodeURIComponent(sync.ghCode)}`;
+      const headers={}; if(sync.ghEtag) headers['If-None-Match']=sync.ghEtag;
+      const res=await fetch(url,{headers});
+      if(res.status===304) return {status:304};
+      if(res.status===404) return {status:404};
+      if(!res.ok){ if(!silent) console.warn('GET failed',res.status); return {status:res.status}; }
+      const etag=res.headers.get('ETag')||res.headers.get('x-etag');
+      const data=await res.json();
+      return {status:200,data,etag};
+    }catch(e){ if(!silent) console.warn('GET error',e); return {status:0}; }
+  }
+  async function ghPut(payload){
+    try{
+      const url=`${sync.ghBase}/ws/${encodeURIComponent(sync.ghCode)}`;
+      const headers={'Content-Type':'application/json'};
+      if(sync.ghEtag) headers['If-Match']=sync.ghEtag;
+      const res=await fetch(url,{method:'PUT',headers,body:JSON.stringify(payload)});
+      if(!res.ok){ console.warn('PUT failed',res.status); return; }
+      const etag=res.headers.get('ETag')||res.headers.get('x-etag');
+      if(etag) sync.ghEtag=etag;
+    }catch(e){ console.warn('PUT error',e); }
+  }
+
+  /* ---------- 共通保存 ---------- */
+  function migrateRemote(data){
+    const def={version:1,lastDate:todayYMD(),lotteries:[],archived:[],locked:false};
+    const s=Object.assign({},def,data||{}); s.lotteries??=[]; s.archived??=[]; s.locked??=false; s.lastDate??=todayYMD();
+    [...s.lotteries,...s.archived].forEach(l=>{ l.applyUrl??=''; l.collapsed??=true; });
+    return s;
+  }
+  const saveRemoteDebounced = debounce(async ()=>{
+    if(!sync.enabled || !sync.connected || sync.isApplyingRemote) return;
+    const payload=JSON.parse(JSON.stringify(store));
+    payload._updatedAt=Date.now(); payload._by=sync.clientId;
+    if(backend==='firebase'){
+      try{ await sync.docRef.set(payload,{merge:false}); }catch(e){ /* noop */ }
+    }else if(backend==='github'){ await ghPut(payload); }
+  },300);
+  function saveAll(){ saveLocal(); saveRemoteDebounced(); }
+
+  /* ---------- 0:00ロールオーバー ---------- */
+  function applyDailyRolloverIfNeeded(force=false){
+    const today=todayYMD();
+    if(!force && store.lastDate===today) return;
+    store.lotteries.forEach(lot=>{
+      const draw=toYMD(lot.drawDate);
+      if(draw && cmpDate(draw,today)<0){
+        lot.devices.forEach(d=>{ if(d.status==='未実施'){ d.status='未当選'; d.updatedAt=Date.now(); } });
+      }else{
+        lot.devices.forEach(d=>{ if(d.status==='未当選'){ d.status='未実施'; d.updatedAt=Date.now(); } });
+      }
+    });
+    store.lastDate=today; saveAll();
+  }
+
+  /* ---------- 端末テンプレ＆伝播 ---------- */
+  function getDeviceNameTemplate(){
+    const set=new Set();
+    [...store.lotteries,...store.archived].forEach(l=>{
+      (l.devices||[]).forEach(d=>{ const n=(d?.name||'').trim(); if(n) set.add(n); });
+    });
+    return [...set].sort((a,b)=>a.localeCompare(b,'ja'));
+  }
+  function propagateNewDeviceName(sourceLotId, deviceName){
+    const name=(deviceName||'').trim(); if(!name) return;
+    store.lotteries.forEach(l=>{
+      if(l.id===sourceLotId) return;
+      const exists=l.devices.some(d=>(d.name||'').trim()===name);
+      if(!exists) l.devices.push({ id:uid(), name, status:'未実施', updatedAt:Date.now() });
+    });
+  }
+
+  /* ---------- Undoトースト ---------- */
+  function showUndo(message,kind,payload){
+    hideUndo(true);
+    el.undoMsg.textContent=message;
+    el.undoProg.style.width='100%';
+    el.undoToast.setAttribute('aria-hidden','false');
+    undo.kind=kind; undo.payload=payload; undo.startedAt=Date.now();
+    const tick=()=>{ const remain=Math.max(0, undo.dur-(Date.now()-undo.startedAt)); el.undoProg.style.width=(remain/undo.dur*100)+'%'; if(remain<=0){ hideUndo(false); } else { undo.timer=setTimeout(tick,100); } }; tick();
+  }
+  function hideUndo(cancelOnly){
+    if(undo.timer){ clearTimeout(undo.timer); undo.timer=null; }
+    el.undoToast.setAttribute('aria-hidden','true'); el.undoProg.style.width='0%';
+    if(!cancelOnly){ undo.kind=null; undo.payload=null; }
+  }
+  el.undoBtn.addEventListener('click', ()=>{
+    if(!undo.kind||!undo.payload) return;
+    if(undo.kind==='row'){
+      const {lotId,index,row}=undo.payload;
+      const lot=store.lotteries.find(l=>l.id===lotId);
+      if(lot){ lot.devices.splice(Math.min(index,lot.devices.length),0,row); saveAll(); renderAll(); }
+    }else if(undo.kind==='lot'){
+      const {index,lot}=undo.payload;
+      store.lotteries.splice(Math.min(index,store.lotteries.length),0,lot);
+      saveAll(); renderAll();
+    }
+    hideUndo(false);
+  });
+
+  /* ---------- ダッシュボード（抽選期限＆引換期限） ---------- */
+  function renderDashboard(){
+    const today=todayYMD();
+    let kpi={lot:0,devUnique:0,win:0,lose:0,pend:0};
+    const uniq=new Set();
+    store.lotteries.forEach(l=>{
+      kpi.lot++;
+      (l.devices||[]).forEach(d=>{
+        const nm=(d.name||'').trim(); if(nm) uniq.add(nm);
+        if(d.status==='当選') kpi.win++;
+        else if(d.status==='未当選') kpi.lose++;
+        else if(d.status==='未実施') kpi.pend++;
+      });
+    });
+    kpi.devUnique=uniq.size;
+
+    const upcomingDraw=[], upcomingRedeem=[];
+    store.lotteries.forEach(l=>{
+      const draw=toYMD(l.drawDate), redeem=toYMD(l.redeemDate);
+      if(draw){
+        const dd=diffDays(today,draw);
+        if(!isNaN(dd)&&dd>=0&&dd<=3) upcomingDraw.push({title:l.title||'無題',date:draw,remain:dd+1});
+      }
+      if(redeem){
+        const rr=diffDays(today,redeem);
+        if(!isNaN(rr)&&rr>=0&&rr<=3) upcomingRedeem.push({title:l.title||'無題',date:redeem,remain:rr+1});
+      }
+    });
+    upcomingDraw.sort((a,b)=>a.date.localeCompare(b.date));
+    upcomingRedeem.sort((a,b)=>a.date.localeCompare(b.date));
+
+    el.dashboard.innerHTML=`
+      <div class="dash-wrap" style="display:flex;flex-direction:column;gap:10px">
+        <div class="dash-kpis" style="display:flex;flex-wrap:wrap;gap:8px">
+          <div class="kpi" style="background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px">抽選カード: <strong>${kpi.lot}</strong></div>
+          <div class="kpi" style="background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px">登録端末: <strong>${kpi.devUnique}</strong></div>
+          <div class="kpi" style="background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px">当選: <strong>${kpi.win}</strong></div>
+          <div class="kpi" style="background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px">未当選: <strong>${kpi.lose}</strong></div>
+          <div class="kpi" style="background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px">未実施: <strong>${kpi.pend}</strong></div>
+          <div class="kpi" style="background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px">表示中: <strong>${kpi.lose + kpi.pend}</strong></div>
+        </div>
+        <div class="dash-two" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="dash-list">
+            <table style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:12px;overflow:hidden">
+              <thead><tr><th style="background:#f8fafc;padding:8px 10px;font-size:12px;text-align:left;color:#334155">タイトル</th><th style="background:#f8fafc;padding:8px 10px;font-size:12px;text-align:left;color:#334155">抽選期限</th><th style="background:#f8fafc;padding:8px 10px;font-size:12px;text-align:left;color:#334155">残り</th></tr></thead>
+              <tbody>
+                ${upcomingDraw.length? upcomingDraw.map(u=>`
+                  <tr><td style="padding:8px 10px;border-top:1px solid var(--line)">${escapeHtml(u.title)}</td><td style="padding:8px 10px;border-top:1px solid var(--line)">${escapeHtml(u.date)}</td><td style="padding:8px 10px;border-top:1px solid var(--line)">${u.remain===1?'本日':u.remain+'日'}</td></tr>
+                `).join(''):`<tr><td colspan="3" style="padding:8px 10px;border-top:1px solid var(--line);color:#64748b">直近3日以内の抽選期限はありません。</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+          <div class="dash-list">
+            <table style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:12px;overflow:hidden">
+              <thead><tr><th style="background:#f8fafc;padding:8px 10px;font-size:12px;text-align:left;color:#334155">タイトル</th><th style="background:#f8fafc;padding:8px 10px;font-size:12px;text-align:left;color:#334155">引換期限</th><th style="background:#f8fafc;padding:8px 10px;font-size:12px;text-align:left;color:#334155">残り</th></tr></thead>
+              <tbody>
+                ${upcomingRedeem.length? upcomingRedeem.map(u=>`
+                  <tr><td style="padding:8px 10px;border-top:1px solid var(--line)">${escapeHtml(u.title)}</td><td style="padding:8px 10px;border-top:1px solid var(--line)">${escapeHtml(u.date)}</td><td style="padding:8px 10px;border-top:1px solid var(--line)">${u.remain===1?'本日':u.remain+'日'}</td></tr>
+                `).join(''):`<tr><td colspan="3" style="padding:8px 10px;border-top:1px solid var(--line);color:#64748b">直近3日以内の引換期限はありません。</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="lotto-hint">※ 日付更新はJSTの0:00で自動（起動時/［日付更新］時）</div>
+      </div>`;
+  }
+
+  /* ---------- 並び替え ---------- */
+  function openSort(){ el.sortMenu.setAttribute('aria-hidden','false'); }
+  function closeSort(){ el.sortMenu.setAttribute('aria-hidden','true'); }
+  function applySortChecks(){
+    el.sortMenu.querySelectorAll('[data-check]').forEach(x=>{
+      x.hidden = (x.getAttribute('data-check')!==sortMode);
+    });
+  }
+  el.sortBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    (el.sortMenu.getAttribute('aria-hidden')==='false'?closeSort():openSort());
+  });
+  el.sortMenu.addEventListener('click',e=>{
+    const item=e.target.closest('.sort-item'); if(!item) return;
+    sortMode=item.getAttribute('data-sort')||'draw';
+    localStorage.setItem(LS_KEY+'_sort',sortMode);
+    applySortChecks(); closeSort(); renderList();
+  });
+  document.addEventListener('click',e=>{ if(!el.sortGroup.contains(e.target)) closeSort(); });
+
+  /* ---------- 描画 ---------- */
+  function renderAll(){
+    store.lotteries.forEach(l=>{ if(typeof l.collapsed==='undefined') l.collapsed=true; });
+    renderFilters(); renderList(); renderArchive(); renderDashboard();
+    applyLockToDOM(); updateLockBadge(); updateSyncBadge(); applySortChecks();
+  }
+
+  function renderFilters(){
+    const deviceSet=new Set(), titleSet=new Set();
+    store.lotteries.forEach(l=>{
+      if(l.title) titleSet.add(l.title);
+      l.devices.forEach(d=>{ const n=(d?.name||'').trim(); if(n) deviceSet.add(n); });
+    });
+    const devVal=el.filterDevice.value, titVal=el.filterTitle.value;
+    el.filterDevice.innerHTML = `<option value="">端末名で絞り込み（全て）</option>` +
+      [...deviceSet].sort((a,b)=>a.localeCompare(b,'ja')).map(n=>`<option ${n===devVal?'selected':''}>${escapeHtml(n)}</option>`).join('');
+    el.filterTitle.innerHTML = `<option value="">タイトルで絞り込み（全て）</option>` +
+      [...titleSet].sort((a,b)=>a.localeCompare(b,'ja')).map(t=>`<option ${t===titVal?'selected':''}>${escapeHtml(t)}</option>`).join('');
+  }
+
+  function counts(lot){
+    const c={win:0,lose:0,pend:0,visible:0,total:lot.devices.length};
+    lot.devices.forEach(d=>{
+      if(d.status==='当選') c.win++;
+      else if(d.status==='未当選'){ c.lose++; c.visible++; }
+      else if(d.status==='未実施'){ c.pend++; c.visible++; }
+    });
+    return c;
+  }
+
+  function renderList(){
+    el.lotteryList.innerHTML='';
+    const list=[...store.lotteries];
+    if(sortMode==='created'){ list.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)); }
+    else{ list.sort((a,b)=>(toYMD(a.drawDate)||'').localeCompare(toYMD(b.drawDate)||'')); }
+
+    list.forEach(lot=>{
+      const c=counts(lot);
+      const draw=toYMD(lot.drawDate)||'-', redeem=toYMD(lot.redeemDate)||'-';
+      const canArchive=(toYMD(lot.redeemDate) && cmpDate(toYMD(lot.redeemDate), todayYMD())<0);
+      const urlHref=lot.applyUrl?normalizeUrl(lot.applyUrl):'';
+      const collapsed=!!lot.collapsed;
+
+      const card=document.createElement('div');
+      card.className='lotto-card';
+      card.innerHTML=`
+        <div class="lotto-head">
+          <div>
+            <div class="lotto-title" contenteditable="true" data-edit="title" data-id="${lot.id}" spellcheck="false">${escapeHtml(lot.title||'無題の抽選')}</div>
+            <div class="lotto-deadline">
+              <div class="deadline-flex">
+                <div class="deadline-field">
+                  <span class="f-label">抽選期限</span>
+                  <input type="date" class="lotto-date" data-edit="draw" data-id="${lot.id}" value="${draw}">
+                </div>
+                <div class="deadline-field">
+                  <span class="f-label">引換期限</span>
+                  <input type="date" class="lotto-date" data-edit="redeem" data-id="${lot.id}" value="${redeem}">
+                </div>
+              </div>
+            </div>
+            <div class="lotto-subhead">
+              <div class="lotto-counts">
+                <span class="count-badge tap" data-open-status="当選" data-id="${lot.id}"><span class="status-dot dot-win"></span> 当選: ${c.win}</span>
+                <span class="count-badge tap" data-open-status="未当選" data-id="${lot.id}"><span class="status-dot dot-lose"></span> 未当選: ${c.lose}</span>
+                <span class="count-badge tap" data-open-status="未実施" data-id="${lot.id}"><span class="status-dot dot-pend"></span> 未実施: ${c.pend}</span>
+                <span class="count-badge is-summary"><small>表示:</small> ${c.visible} / ${c.total}</span>
+              </div>
+            </div>
+          </div>
+          <div class="lotto-actions">
+            <button class="lotto-btn danger" data-action="deleteNow" data-id="${lot.id}">カード削除</button>
+            <button class="lotto-btn ghost" data-action="clone" data-id="${lot.id}">複製</button>
+            ${urlHref
+              ? `<a class="lotto-btn url" data-role="urlBtn" data-id="${lot.id}" href="${escapeAttr(urlHref)}" target="_blank" rel="noopener">抽選URL</a>`
+              : `<button class="lotto-btn url" data-role="urlBtn" data-id="${lot.id}">抽選URL（未設定）</button>`}
+            <button class="lotto-btn soft-primary" data-action="addRow" data-id="${lot.id}">新規追加</button>
+            <button class="lotto-btn ghost" data-action="toggleList" data-id="${lot.id}">${collapsed?'一覧を表示':'一覧を隠す'}</button>
+            ${canArchive?`<button class="lotto-btn warn" data-action="archive" data-id="${lot.id}">アーカイブ</button>
+                          <button class="lotto-btn danger" data-action="delete" data-id="${lot.id}">削除</button>`:''}
+          </div>
+        </div>
+        <div class="lotto-body">
+          <div class="list-wrap" data-wrap="${lot.id}" ${collapsed?'hidden':''}>
+            <table class="lotto-table" data-table="${lot.id}">
+              <tbody>${lot.devices.map(d=>renderRowCompact(lot.id,d)).join('')}</tbody>
+            </table>
+            <div class="list-footer" style="display:flex;justify-content:flex-end;margin-top:8px">
+              <button class="lotto-btn soft-primary" data-action="addRow" data-id="${lot.id}">新規追加</button>
+            </div>
+          </div>
+        </div>`;
+
+      // 当選は非表示（既存仕様）
+      const tbody=card.querySelector('tbody');
+      [...tbody.querySelectorAll('tr')].forEach(tr=>{ if(tr.dataset.status==='当選') tr.style.display='none'; });
+
+      // クリック系
+      card.addEventListener('click', onCardClick);
+      card.addEventListener('change', onCardChange);
+      card.addEventListener('input', onCardInput);
+      card.addEventListener('focusout', onCardBlur, true);
+
+      // ステータス詳細
+      card.querySelectorAll('[data-open-status]').forEach(b=>{
+        b.addEventListener('click',()=>openStatusModal(lot.id,b.getAttribute('data-open-status')));
+      });
+
+      el.lotteryList.appendChild(card);
+    });
+  }
+
+  function renderRowCompact(lotId,d){
+    return `
+      <tr data-lot="${lotId}" data-dev="${d.id}" data-status="${d.status}">
+        <td data-label="">
+          <div style="display:flex;align-items:center;gap:8px">
+            <input class="lotto-input" data-edit="devName" data-id="${lotId}" data-dev="${d.id}" value="${escapeAttr(d.name||'')}" placeholder="例）Pixel 8" autocapitalize="off" autocomplete="off" spellcheck="false">
+            <button class="lotto-btn ghost mini" data-action="delRow" data-id="${lotId}" data-dev="${d.id}">削除</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  /* ---------- アーカイブ ---------- */
+  function renderArchive(){
+    const has=store.archived.length>0;
+    el.archiveCard.style.display = has ? '' : 'none';
+    el.archiveList.innerHTML = store.archived
+      .sort((a,b)=>(toYMD(a.redeemDate)||'').localeCompare(toYMD(b.redeemDate)||''))
+      .map(l=>`
+        <div class="lotto-card archived" style="opacity:.75">
+          <div class="lotto-head">
+            <div>
+              <div class="lotto-title">${escapeHtml(l.title||'無題の抽選')}</div>
+              <div class="lotto-deadline">抽選期限: ${escapeHtml(toYMD(l.drawDate)||'-')} ／ 引換期限: ${escapeHtml(toYMD(l.redeemDate)||'-')}</div>
+              <div class="lotto-subhead"><span class="lotto-hint">※アーカイブ。履歴は保持されています。</span></div>
+            </div>
+            <div class="lotto-actions">
+              <button class="lotto-btn" data-arch="restore" data-id="${l.id}">復元</button>
+              <button class="lotto-btn danger" data-arch="purge" data-id="${l.id}">完全削除</button>
+            </div>
+          </div>
+        </div>`).join('');
+    el.archiveList.querySelectorAll('button[data-arch]').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        const id=e.currentTarget.dataset.id, act=e.currentTarget.dataset.arch;
+        if(act==='restore'){ const i=store.archived.findIndex(x=>x.id===id); if(i>-1){ store.lotteries.push(store.archived[i]); store.archived.splice(i,1); saveAll(); renderAll(); } }
+        if(act==='purge'){ if(confirm('このアーカイブを完全に削除します。よろしいですか？（元に戻せません）')){ const i=store.archived.findIndex(x=>x.id===id); if(i>-1){ store.archived.splice(i,1); saveAll(); renderAll(); } } }
+      });
+    });
+  }
+
+  /* ---------- ステータス詳細モーダル ---------- */
+  let currentStatusLotId=null, currentStatusType='当選';
+  function openStatusModal(lotId,status){
+    currentStatusLotId=lotId; currentStatusType=status;
+    const lot=store.lotteries.find(l=>l.id===lotId); if(!lot) return;
+    el.statusTitle.textContent=`${lot.title||'無題'}｜${status}（編集）`;
+    const rows=lot.devices.filter(d=>d.status===status);
+    el.statusBody.innerHTML = rows.length ? `
+      <div style="overflow:auto">
+        <table class="lotto-table">
+          <thead><tr><th>端末名</th><th>ステータス</th><th style="width:110px"></th></tr></thead>
+          <tbody>
+            ${rows.map(d=>{ const seg=`sseg-${lotId}-${d.id}`; return `
+              <tr data-dev="${d.id}" data-status="${d.status}">
+                <td data-label="端末名">${escapeHtml(d.name||'(名称未設定)')}</td>
+                <td data-label="ステータス">
+                  <div class="seg" style="display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden">
+                    <input type="radio" id="${seg}-win" name="${seg}" ${d.status==='当選'?'checked':''} data-status="当選"><label for="${seg}-win" style="padding:6px 10px;border-right:1px solid var(--line);cursor:pointer;font-size:12px">当選</label>
+                    <input type="radio" id="${seg}-lose" name="${seg}" ${d.status==='未当選'?'checked':''} data-status="未当選"><label for="${seg}-lose" style="padding:6px 10px;border-right:1px solid var(--line);cursor:pointer;font-size:12px">未当選</label>
+                    <input type="radio" id="${seg}-pend" name="${seg}" ${d.status==='未実施'?'checked':''} data-status="未実施"><label for="${seg}-pend" style="padding:6px 10px;cursor:pointer;font-size:12px">未実施</label>
+                  </div>
+                </td>
+                <td data-label="操作" class="lotto-row-actions">
+                  <button class="lotto-btn ghost" data-role="delDev" data-id="${lotId}" data-dev="${d.id}">削除</button>
+                </td>
+              </tr>`; }).join('')}
+          </tbody>
+        </table>
+      </div>` : `<div class="m-empty">${status}の履歴はありません。</div>`;
+    el.statusModal.setAttribute('aria-hidden','false'); applyLockToDOM();
+  }
+  function closeStatusModal(){ el.statusModal.setAttribute('aria-hidden','true'); currentStatusLotId=null; }
+  el.statusCloseBtn.addEventListener('click', closeStatusModal);
+  el.statusModal.addEventListener('click', (e)=>{ if(e.target.hasAttribute('data-modal-close')) closeStatusModal(); });
+  document.addEventListener('keydown',(e)=>{ if(e.key==='Escape' && el.statusModal.getAttribute('aria-hidden')==='false') closeStatusModal(); });
+
+  el.statusBody.addEventListener('change',(e)=>{
+    if(!e.target.matches('.seg input[type=radio]')) return;
+    if(store.locked){ e.preventDefault(); return; }
+    const tr=e.target.closest('tr'), devId=tr.dataset.dev;
+    const lot=store.lotteries.find(l=>l.id===currentStatusLotId); if(!lot) return;
+    const d=lot.devices.find(x=>x.id===devId); if(!d) return;
+    const status=e.target.dataset.status; d.status=status; d.updatedAt=Date.now(); saveAll();
+    tr.dataset.status=status;
+    if(status!==currentStatusType){
+      tr.remove(); renderList(); renderFilters();
+      if(!el.statusBody.querySelector('tbody tr')) el.statusBody.innerHTML=`<div class="m-empty">${currentStatusType}の履歴はありません。</div>`;
+    }
+  });
+  el.statusBody.addEventListener('click',(e)=>{
+    const btn=e.target.closest('[data-role="delDev"]'); if(!btn) return;
+    if(store.locked) return;
+    const lotId=btn.dataset.id, devId=btn.dataset.dev;
+    const lot=store.lotteries.find(l=>l.id===lotId); if(!lot) return;
+    const idx=lot.devices.findIndex(x=>x.id===devId);
+    if(idx>-1){ const row=lot.devices[idx]; lot.devices.splice(idx,1); saveAll(); renderAll(); showUndo('行を削除しました','row',{lotId:lotId,index:idx,row}); const tr=btn.closest('tr'); if(tr) tr.remove(); if(!el.statusBody.querySelector('tbody tr')) el.statusBody.innerHTML=`<div class="m-empty">${currentStatusType}の履歴はありません。</div>`; }
+  });
+
+  /* ---------- 操作 ---------- */
+  el.addLotteryBtn.addEventListener('click', ()=>{
+    if(store.locked) return;
+    const title=el.newTitle.value.trim()||'無題の抽選';
+    const draw=toYMD(el.newDrawDate.value), redeem=toYMD(el.newRedeemDate.value);
+    const applyUrl=normalizeUrl(el.newApplyUrl.value);
+    const lot={ id:uid(), title, drawDate:draw, redeemDate:redeem, applyUrl, createdAt:Date.now(), collapsed:true, devices:[] };
+    getDeviceNameTemplate().forEach(name=>{ lot.devices.push({ id:uid(), name, status:'未実施', updatedAt:Date.now() }); });
+    store.lotteries.push(lot); saveAll();
+    el.newTitle.value=''; el.newDrawDate.value=''; el.newRedeemDate.value=''; el.newApplyUrl.value='';
+    renderAll();
+  });
+
+  el.lockToggleBtn.addEventListener('click', ()=>{ store.locked=!store.locked; saveAll(); applyLockToDOM(); updateLockBadge(); });
+
+  function onCardClick(e){
+    const urlBtn=e.target.closest('[data-role="urlBtn"]');
+    if(urlBtn){
+      const lotId=urlBtn.getAttribute('data-id');
+      const lot=store.lotteries.find(l=>l.id===lotId);
+      if(lot && !lot.applyUrl){ e.preventDefault(); handleUrlEdit(urlBtn); return; }
+    }
+
+    const btn=e.target.closest('button'); const link=e.target.closest('a');
+    if(!btn && !link) return;
+    const act=btn?.dataset.action || link?.dataset.action;
+    const id =btn?.dataset.id || link?.dataset.id;
+    const dev=btn?.dataset.dev || link?.dataset.dev;
+
+    if(store.locked){
+      if(['addRow','delRow','archive','delete','deleteNow','toggleList','clone'].includes(act)){ e.preventDefault(); return; }
+    }
+    if(act==='toggleList'){ const lot=store.lotteries.find(l=>l.id===id); if(!lot) return; lot.collapsed=!lot.collapsed; saveAll(); renderAll(); return; }
+
+    if(act==='clone'){
+      const idx=store.lotteries.findIndex(l=>l.id===id);
+      if(idx>-1){
+        const base=store.lotteries[idx];
+        const cloned=JSON.parse(JSON.stringify(base));
+        cloned.id=uid(); cloned.title=(cloned.title||'無題の抽選')+'（複製）'; cloned.createdAt=Date.now(); cloned.collapsed=true;
+        cloned.devices=(cloned.devices||[]).map(d=>({ id:uid(), name:d.name, status:d.status, updatedAt:Date.now() }));
+        store.lotteries.splice(idx+1,0,cloned); saveAll(); renderAll();
+      }
+    }
+
+    if(act==='addRow'){
+      const lot=store.lotteries.find(l=>l.id===id); if(!lot) return;
+      const newId=uid();
+      lot.devices.push({ id:newId, name:'', status:'未実施', updatedAt:Date.now(), newlyAdded:true });
+      lot.collapsed=false; saveAll(); renderAll();
+      setTimeout(()=>{
+        const row=document.querySelector(`tr[data-lot="${id}"][data-dev="${newId}"]`);
+        if(row){ const input=row.querySelector('input[data-edit="devName"]'); row.scrollIntoView({behavior:'smooth',block:'center'}); if(input) input.focus({preventScroll:true}); }
+      },0);
+    }
+
+    if(act==='delRow'){
+      const lot=store.lotteries.find(l=>l.id===id); if(!lot) return;
+      const idx=lot.devices.findIndex(x=>x.id===dev);
+      if(idx>-1){ const row=lot.devices[idx]; lot.devices.splice(idx,1); saveAll(); renderAll(); showUndo('行を削除しました','row',{lotId:id,index:idx,row}); }
+    }
+
+    if(act==='archive'){
+      const idx=store.lotteries.findIndex(l=>l.id===id);
+      if(idx>-1 && confirm('この抽選をアーカイブしますか？一覧からは消えますが履歴は保持されます。')){
+        store.archived.push(store.lotteries[idx]); store.lotteries.splice(idx,1); saveAll(); renderAll();
+      }
+    }
+    if(act==='delete'){
+      const idx=store.lotteries.findIndex(l=>l.id===id);
+      if(idx>-1 && confirm('この抽選を削除しますか？（アーカイブせず即削除）')){
+        const lot=store.lotteries[idx]; store.lotteries.splice(idx,1); saveAll(); renderAll(); showUndo('抽選を削除しました','lot',{index:idx,lot});
+      }
+    }
+    if(act==='deleteNow'){
+      const idx=store.lotteries.findIndex(l=>l.id===id);
+      if(idx>-1 && confirm('この抽選カードを削除します（※5秒以内なら取り消し可能）')){
+        const lot=store.lotteries[idx]; store.lotteries.splice(idx,1); saveAll(); renderAll(); showUndo('抽選カードを削除しました','lot',{index:idx,lot});
+      }
+    }
+  }
+
+  function onCardChange(e){
+    if(e.target.matches('input.lotto-date[data-edit]')){
+      if(store.locked){ e.preventDefault(); e.target.value = toYMD(e.target.defaultValue)||''; return; }
+      const kind=e.target.dataset.edit; const id=e.target.dataset.id;
+      const lot=store.lotteries.find(l=>l.id===id); if(!lot) return;
+      if(kind==='draw') lot.drawDate=toYMD(e.target.value)||''; if(kind==='redeem') lot.redeemDate=toYMD(e.target.value)||'';
+      saveAll(); renderAll();
+    }
+  }
+
+  function onCardInput(e){
+    if(e.target.matches('[data-edit="title"]')){
+      if(store.locked) return;
+      const id=e.target.dataset.id; const lot=store.lotteries.find(l=>l.id===id); if(!lot) return;
+      lot.title=e.target.textContent.trim(); saveAll(); renderFilters(); renderDashboard();
+    }
+    if(e.target.matches('input[data-edit="devName"]')){
+      if(store.locked){ e.preventDefault(); return; }
+      const id=e.target.dataset.id, dev=e.target.dataset.dev;
+      const lot=store.lotteries.find(l=>l.id===id); if(!lot) return;
+      const d=lot.devices.find(x=>x.id===dev); if(!d) return;
+      d.name=e.target.value; saveAll(); renderFilters();
+    }
+  }
+
+  // 新規端末名確定 → 他カードへ伝播
+  function onCardBlur(e){
+    if(!e.target.matches('input[data-edit="devName"]')) return;
+    if(store.locked) return;
+    const input=e.target; const id=input.dataset.id; const dev=input.dataset.dev;
+    const lot=store.lotteries.find(l=>l.id===id); if(!lot) return;
+    const d=lot.devices.find(x=>x.id===dev); if(!d) return;
+    const name=(input.value||'').trim(); if(!name) return;
+    if(d.newlyAdded){ propagateNewDeviceName(id, name); d.newlyAdded=false; saveAll(); renderAll(); }
+  }
+
+  /* ---------- 抽選URL編集（長押し or 未設定クリック） ---------- */
+  el.lotteryList.addEventListener('pointerdown',(e)=>{
+    const btn=e.target.closest('[data-role="urlBtn"]'); if(!btn) return;
+    const lotId=btn.getAttribute('data-id');
+    const lot=store.lotteries.find(l=>l.id===lotId);
+    if(lot && !lot.applyUrl) return; // 未設定はタップで即編集
+    lp.target=btn; lp.fired=false;
+    lp.timer=setTimeout(()=>{ lp.fired=true; handleUrlEdit(btn); }, lp.delay);
+  });
+  ['pointerup','pointerleave','pointercancel'].forEach(t=>{
+    el.lotteryList.addEventListener(t,()=>{ if(lp.timer){ clearTimeout(lp.timer); lp.timer=null; } });
+  });
+  el.lotteryList.addEventListener('click',(e)=>{
+    const btn=e.target.closest('[data-role="urlBtn"]'); if(!btn) return;
+    const lotId=btn.getAttribute('data-id'); const lot=store.lotteries.find(l=>l.id===lotId);
+    if(lot && !lot.applyUrl){ handleUrlEdit(btn); } // 未設定はタップ→編集
+  });
+  el.lotteryList.addEventListener('contextmenu',(e)=>{ if(lp.fired) e.preventDefault(); });
+  function handleUrlEdit(btn){
+    if(store.locked) return;
+    const lotId=btn.getAttribute('data-id');
+    const lot=store.lotteries.find(l=>l.id===lotId); if(!lot) return;
+    const current=lot.applyUrl||'';
+    const val=prompt('応募URLを入力/編集（https:// は自動付与）', current);
+    if(val===null) return;
+    lot.applyUrl=normalizeUrl(val); saveAll(); renderList();
+  }
+
+  /* ---------- 絞り込みモーダル ---------- */
+  function openFilter(){ el.filterModal.setAttribute('aria-hidden','false'); }
+  function closeFilter(){ el.filterModal.setAttribute('aria-hidden','true'); }
+  el.openFilterBtn.addEventListener('click', openFilter);
+  el.filterCloseBtn.addEventListener('click', closeFilter);
+  el.filterModal.addEventListener('click', (e)=>{ if(e.target.hasAttribute('data-modal-close')) closeFilter(); });
+
+  el.applyFilterBtn.addEventListener('click', ()=>{
+    const device=el.filterDevice.value.trim(), title=el.filterTitle.value.trim();
+    const rows=[];
+    store.lotteries.forEach(l=>{
+      if(title && l.title!==title) return;
+      l.devices.forEach(d=>{
+        const n=(d?.name||'').trim(); if(device && n!==device) return;
+        rows.push({title:l.title,draw:l.drawDate,redeem:l.redeemDate,device:n,status:d.status});
+      });
+    });
+    if(!rows.length){ el.filterResult.style.display=''; el.filterResult.innerHTML=`<div class="lotto-hint">該当なし</div>`; return; }
+    el.filterResult.style.display='';
+    el.filterResult.innerHTML=`
+      <div style="overflow:auto">
+        <table class="lotto-table">
+          <thead><tr><th>タイトル</th><th>端末名</th><th>ステータス</th><th>抽選期限</th><th>引換期限</th></tr></thead>
+          <tbody>
+            ${rows.map(r=>{
+              const cls = r.status==='当選'?'chip-win':(r.status==='未当選'?'chip-lose':'chip-pend');
+              const dot = r.status==='当選'?'dot-win':(r.status==='未当選'?'dot-lose':'dot-pend');
+              return `
+                <tr>
+                  <td>${escapeHtml(r.title||'')}</td>
+                  <td>${escapeHtml(r.device||'')}</td>
+                  <td><span class="status-chip ${cls}"><span class="status-dot ${dot}"></span>${escapeHtml(r.status||'')}</span></td>
+                  <td>${escapeHtml(toYMD(r.draw)||'-')}</td>
+                  <td>${escapeHtml(toYMD(r.redeem)||'-')}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  });
+  el.resetFilterBtn.addEventListener('click', ()=>{ el.filterDevice.value=''; el.filterTitle.value=''; el.filterResult.style.display='none'; el.filterResult.innerHTML=''; });
+
+  /* ---------- 入出力メニュー制御 ---------- */
+  function openIOMenu(){ el.ioMenu.setAttribute('aria-hidden','false'); el.ioMenuBtn.setAttribute('aria-expanded','true'); }
+  function closeIOMenu(){ el.ioMenu.setAttribute('aria-hidden','true'); el.ioMenuBtn.setAttribute('aria-expanded','false'); }
+  el.ioMenuBtn.addEventListener('click', (e)=>{ e.stopPropagation(); const opened=el.ioMenu.getAttribute('aria-hidden')==='false'; opened?closeIOMenu():openIOMenu(); });
+  document.addEventListener('click', (e)=>{ if(!el.ioGroup.contains(e.target)) closeIOMenu(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeIOMenu(); });
+
+  /* ---------- 同期UI ---------- */
+  el.wsConnectBtn.addEventListener('click', ()=>{
+    const code=el.wsCode.value.trim();
+    if(backend==='firebase') fbConnect(code);
+    else if(backend==='github') ghConnect(code);
+    else alert('同期モードがローカルのため、接続は不要です。');
+  });
+  el.wsDisconnectBtn.addEventListener('click', ()=>{
+    if(backend==='firebase') fbDisconnect();
+    else if(backend==='github') ghStop();
+  });
+
+  // 自動再接続
+  const lastWs=localStorage.getItem(LS_KEY+'_ws');
+  if(lastWs){
+    el.wsCode.value=lastWs;
+    if(backend==='firebase') fbConnect(lastWs).catch(()=>{});
+    else if(backend==='github') ghConnect(lastWs).catch(()=>{});
+  }
+
+  /* ---------- 編集ロック UI ---------- */
+  function applyLockToDOM(){
+    const locked=!!store.locked;
+    document.querySelectorAll('[data-edit="title"]').forEach(n=>{ n.setAttribute('contenteditable', locked?'false':'true'); });
+    document.querySelectorAll('.lotto-input, .lotto-date').forEach(n=>{ n.disabled=locked; });
+    document.querySelectorAll('[data-action]').forEach(btn=>{
+      const act=btn.getAttribute('data-action');
+      const editable=['addRow','delRow','archive','delete','deleteNow','toggleList','clone'];
+      btn.disabled=locked && editable.includes(act);
+    });
+    el.addLotteryBtn.disabled=locked;
+    el.importFile.disabled=locked;
+    if(el.statusBody){ el.statusBody.querySelectorAll('.seg input[type=radio]').forEach(n=>{ n.disabled=locked; }); }
+  }
+  function updateLockBadge(){ el.lockState.textContent = store.locked ? 'ON' : 'OFF'; }
+
+  /* ---------- 起動 ---------- */
+  applyDailyRolloverIfNeeded(false);
+  store.lotteries.forEach(l=>{ l.applyUrl=normalizeUrl(l.applyUrl||''); l.collapsed ??= true; });
+  saveAll();
+  renderAll();
+})();
+</script>
