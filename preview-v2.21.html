@@ -1,1 +1,38 @@
-PLACEHOLDER
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TOM 抽選マネージャー V2.21</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#f4f6fa}iframe{display:block;width:100%;height:100%;border:0}</style>
+</head>
+<body>
+<iframe id="app" src="./preview-v2.16.html" title="TOM 抽選マネージャー V2.21"></iframe>
+<script>
+const frame=document.getElementById('app');
+frame.addEventListener('load',()=>{
+  const d=frame.contentDocument;if(!d)return;
+  const style=d.createElement('style');
+  style.textContent=`
+    .date-row-v221{display:flex;align-items:center;justify-content:center;gap:4px;margin:3px 0}
+    .date-row-v221 .date{margin:0}
+    .weekday-v221{width:18px;height:18px;flex:0 0 18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid #cfd6e1;color:#657185;font-size:9px;font-weight:1000;line-height:1}
+    .weekday-v221.sat{color:#2474d8;border-color:#9fc2ee;background:#f4f9ff}
+    .weekday-v221.sun{color:#d93c4b;border-color:#efadb5;background:#fff7f8}
+    .datebox.today .weekday-v221{background:#fff;border-color:#fff}
+  `;
+  d.head.appendChild(style);
+  d.querySelectorAll('.datebox .date').forEach(el=>{
+    if(el.parentElement?.classList.contains('date-row-v221'))return;
+    const m=el.textContent.trim().match(/^(\d{1,2})\/(\d{1,2})$/);if(!m)return;
+    const now=new Date();const year=now.getFullYear();const dt=new Date(year,Number(m[1])-1,Number(m[2]));
+    const labels=['日','月','火','水','木','金','土'];const n=dt.getDay();
+    const row=d.createElement('div');row.className='date-row-v221';
+    el.parentNode.insertBefore(row,el);row.appendChild(el);
+    const b=d.createElement('span');b.className='weekday-v221 '+(n===0?'sun':n===6?'sat':'');b.textContent=labels[n];row.appendChild(b);
+  });
+  d.querySelectorAll('small').forEach(x=>{if(/V2\.16|V2\.17/.test(x.textContent))x.textContent=x.textContent.replace(/V2\.1[67]/,'V2.21')});
+});
+</script>
+</body>
+</html>
