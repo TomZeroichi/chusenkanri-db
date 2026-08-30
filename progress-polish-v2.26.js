@@ -248,9 +248,10 @@
     }catch(err){console.warn('[TOM V2.26] progress polish load failed',err);}finally{busy=false;}
   }
 
-  injectStyle();ensureArchiveUi();
-  const observer=new MutationObserver(()=>{renderCardPolish();ensureArchiveUi();});
-  observer.observe(document.documentElement,{childList:true,subtree:true});
+  injectStyle();
+  ensureArchiveUi();
+  document.addEventListener('click',()=>setTimeout(()=>{renderCardPolish();ensureArchiveUi();},180),true);
+  document.addEventListener('change',()=>setTimeout(load,700),true);
   setTimeout(load,700);
   setTimeout(load,2200);
   setInterval(load,20000);
