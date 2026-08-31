@@ -5,24 +5,27 @@
   const STRIP_ID='tom-mail-compact-v227';
   const MODAL_ID='tom-settings-modal-v227';
   const STYLE_ID='tom-mail-settings-style-v227';
+  const ADDRESS_RE=new RegExp('[A-Za-z0-9._%+-]+@'+DOMAIN.replace(/\./g,'\\.'),'i');
 
   const normalize=v=>String(v||'').replace(/\s+/g,' ').trim();
 
-  function getMailAddress(){
-    const text=document.body?.textContent||'';
-    const m=text.match(new RegExp('[A-Za-z0-9._%+-]+@'+DOMAIN.replace(/\./g,'\\.'),'i'));
-    return m?m[0]:'';
-  }
+  let connectedLatched=false;
+  let rememberedAddress='';
+  let rememberedLast='';
+  let applying=false;
 
-  function isConnected(){
-    const text=normalize(document.body?.textContent||'');
-    return !!getMailAddress() && /連携済み/.test(text);
-  }
+  function pageText(){return document.body?.textContent||'';}
 
-  function getLastReceived(){
-    const text=normalize(document.body?.textContent||'');
-    const m=text.match(/最終受信\s*[:：]?\s*([^|｜]{3,32}?)(?=\s{2,}|$|設定|コピー|メール)/);
-    return m?normalize(m[1]):'';
+  function scanState(){
+    const text=pageText();
+    const m=text.match(ADDRESS_RE);
+    if(m)rememberedAddress=m[0];
+
+    const last=text.match(/最終受信\s*[:：]?\s*([^|｜]{3,32}?)(?=\s{2,}|$|設定|コピー|メール)/);
+    if(last)rememberedLast=normalize(last[1]);
+
+    if(rememberedAddress && /連携済み/.test(text))connectedLatched=true;
+    return connectedLatched;
   }
 
   function ensureStyles(){
@@ -56,15 +59,18 @@
     document.head.appendChild(s);
   }
 
-  function findMailCard(address){
+  function findMailCard(){
+    const address=rememberedAddress;
     if(!address)return null;
     const leaves=[...document.querySelectorAll('body *')].filter(el=>{
+      if(el.closest('#'+STRIP_ID) || el.closest('#'+MODAL_ID))return false;
       if(el.children.length)return false;
       return String(el.textContent||'').includes(address);
     });
     for(const leaf of leaves){
       let node=leaf;
       for(let depth=0;node&&node!==document.body&&depth<9;depth++,node=node.parentElement){
+        if(node.id===STRIP_ID || node.id===MODAL_ID)continue;
         const text=normalize(node.textContent);
         if(!text.includes(address))continue;
         if(!/(メール連携|専用メール|専用アドレス|連携済み)/.test(text))continue;
@@ -74,15 +80,6 @@
       }
     }
     return null;
-  }
-
-  function restoreMailCard(){
-    const card=document.querySelector('[data-tom-mail-card-hidden="1"]');
-    if(card){
-      card.style.removeProperty('display');
-      delete card.dataset.tomMailCardHidden;
-    }
-    document.getElementById(STRIP_ID)?.remove();
   }
 
   function copyFallback(text){
@@ -101,32 +98,23 @@
       if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(text);
       else copyFallback(text);
       return true;
-    }catch(_){
-      copyFallback(text);
-      return true;
-    }
+    }catch(_){copyFallback(text);return true;}
   }
 
+  function closeModal(){document.getElementById(MODAL_ID)?.remove();}
+
   function openOriginalSetup(){
-    const card=document.querySelector('[data-tom-mail-card-hidden="1"]');
+    const card=document.querySelector('[data-tom-mail-card-hidden="1"]')||findMailCard();
     if(!card)return;
     const trigger=[...card.querySelectorAll('button,a')].find(el=>/再設定|初回設定|設定をする|転送設定/.test(normalize(el.textContent)));
     closeModal();
-    if(trigger){
-      try{trigger.click();return;}catch(_){/* fall through */}
-    }
-    card.style.removeProperty('display');
-    delete card.dataset.tomMailCardHidden;
-    document.getElementById(STRIP_ID)?.remove();
-    card.scrollIntoView({behavior:'smooth',block:'center'});
+    if(trigger){try{trigger.click();return;}catch(_){/* noop */}}
   }
 
-  function closeModal(){
-    document.getElementById(MODAL_ID)?.remove();
-  }
-
-  function openSettings(address,last){
+  function openSettings(){
     closeModal();
+    const address=rememberedAddress;
+    const last=rememberedLast;
     const overlay=document.createElement('div');
     overlay.id=MODAL_ID;
     overlay.innerHTML=`
@@ -135,11 +123,14 @@
         <div class="tom-section-title">メール連携</div>
         <div class="tom-connected">連携済み</div>
         <div class="tom-label">専用メールアドレス</div>
-        <div class="tom-address-row"><div class="tom-address" title="${address}">${address}</div><button class="tom-copy" type="button">コピー</button></div>
-        <div class="tom-meta">${last?`最終受信：${last}`:'メール転送を受信すると自動で抽選状況へ反映されます。'}</div>
+        <div class="tom-address-row"><div class="tom-address"></div><button class="tom-copy" type="button">コピー</button></div>
+        <div class="tom-meta"></div>
         <div class="tom-toast" aria-live="polite"></div>
         <div class="tom-actions"><button class="tom-reopen" type="button">メール連携を再設定</button></div>
       </div>`;
+    overlay.querySelector('.tom-address').textContent=address;
+    overlay.querySelector('.tom-address').title=address;
+    overlay.querySelector('.tom-meta').textContent=last?`最終受信：${last}`:'メール転送を受信すると自動で抽選状況へ反映されます。';
     document.body.appendChild(overlay);
     overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal();});
     overlay.querySelector('.tom-close')?.addEventListener('click',closeModal);
@@ -152,49 +143,48 @@
     overlay.querySelector('.tom-reopen')?.addEventListener('click',openOriginalSetup);
   }
 
-  function makeCompact(card,address){
+  function createStripBefore(card){
     let strip=document.getElementById(STRIP_ID);
-    const last=getLastReceived();
     if(!strip){
       strip=document.createElement('div');
       strip.id=STRIP_ID;
-      strip.innerHTML=`<div class="tom-mail-status"><span class="tom-mail-dot"></span><span>メール連携済み</span><span class="tom-mail-last"></span></div><button type="button">設定</button>`;
+      strip.innerHTML='<div class="tom-mail-status"><span class="tom-mail-dot"></span><span>メール連携済み</span><span class="tom-mail-last"></span></div><button type="button">設定</button>';
       card.parentNode?.insertBefore(strip,card);
-      strip.querySelector('button')?.addEventListener('click',()=>openSettings(getMailAddress()||address,getLastReceived()||last));
+      strip.querySelector('button')?.addEventListener('click',openSettings);
     }
     const lastEl=strip.querySelector('.tom-mail-last');
-    if(lastEl)lastEl.textContent=last?`最終受信 ${last}`:'';
-    card.style.display='none';
+    const next=rememberedLast?`最終受信 ${rememberedLast}`:'';
+    if(lastEl && lastEl.textContent!==next)lastEl.textContent=next;
+    return strip;
+  }
+
+  function compactVisibleCard(){
+    const card=findMailCard();
+    if(!card)return false;
+    createStripBefore(card);
+    if(card.style.display!=='none')card.style.display='none';
     card.dataset.tomMailCardHidden='1';
+    return true;
   }
 
   function apply(){
-    ensureStyles();
-    if(!isConnected()){
-      restoreMailCard();
-      closeModal();
-      return;
-    }
-    const address=getMailAddress();
-    const already=document.querySelector('[data-tom-mail-card-hidden="1"]');
-    if(already){
-      makeCompact(already,address);
-      return;
-    }
-    const card=findMailCard(address);
-    if(card)makeCompact(card,address);
+    if(applying)return;
+    applying=true;
+    try{
+      ensureStyles();
+      scanState();
+      if(!connectedLatched)return; // 一度連携済みになったら自動で未連携へ戻さない
+      compactVisibleCard();
+    }finally{applying=false;}
   }
 
-  let scheduled=false;
-  const schedule=()=>{
-    if(scheduled)return;
-    scheduled=true;
-    requestAnimationFrame(()=>{scheduled=false;apply();});
-  };
-
-  new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+  const observer=new MutationObserver(()=>apply());
+  observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
   document.addEventListener('DOMContentLoaded',apply,{once:true});
-  setTimeout(apply,250);
+  apply();
+  setTimeout(apply,100);
+  setTimeout(apply,300);
   setTimeout(apply,800);
   setTimeout(apply,1800);
+  setInterval(()=>{if(connectedLatched)compactVisibleCard();},500);
 })();
