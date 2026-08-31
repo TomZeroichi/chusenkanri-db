@@ -9,18 +9,18 @@
   const normalize=v=>String(v||'').replace(/\s+/g,' ').trim();
 
   function getMailAddress(){
-    const text=document.body?.innerText||document.body?.textContent||'';
+    const text=document.body?.textContent||'';
     const m=text.match(new RegExp('[A-Za-z0-9._%+-]+@'+DOMAIN.replace(/\./g,'\\.'),'i'));
     return m?m[0]:'';
   }
 
   function isConnected(){
-    const text=normalize(document.body?.innerText||document.body?.textContent);
+    const text=normalize(document.body?.textContent||'');
     return !!getMailAddress() && /連携済み/.test(text);
   }
 
   function getLastReceived(){
-    const text=normalize(document.body?.innerText||document.body?.textContent);
+    const text=normalize(document.body?.textContent||'');
     const m=text.match(/最終受信\s*[:：]?\s*([^|｜]{3,32}?)(?=\s{2,}|$|設定|コピー|メール)/);
     return m?normalize(m[1]):'';
   }
@@ -65,7 +65,7 @@
     for(const leaf of leaves){
       let node=leaf;
       for(let depth=0;node&&node!==document.body&&depth<9;depth++,node=node.parentElement){
-        const text=normalize(node.innerText||node.textContent);
+        const text=normalize(node.textContent);
         if(!text.includes(address))continue;
         if(!/(メール連携|専用メール|専用アドレス|連携済み)/.test(text))continue;
         if(text.length>2500)continue;
