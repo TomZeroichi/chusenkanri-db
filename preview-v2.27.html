@@ -31,7 +31,8 @@
       '<script src="./mail-ui-cleanup-v2.25.js?v=2.27.0"><'+'/script>',
       '<script src="./progress-polish-v2.26.js?v=2.27.0"><'+'/script>',
       '<script src="./mail-settings-v2.27.js?v=2.27.2"><'+'/script>',
-      '<script src="./hide-mail-badges-v2.27.js?v=2.27.3"><'+'/script>'
+      '<script src="./hide-mail-badges-v2.27.js?v=2.27.3"><'+'/script>',
+      '<script src="./member-admin-v2.27.js?v=2.27.4"><'+'/script>'
     ].join('');
     const patched=html.includes('</body>')?html.replace('</body>',patch+'</body>'):html+patch;
     document.open();
