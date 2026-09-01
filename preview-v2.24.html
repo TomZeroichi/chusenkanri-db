@@ -27,8 +27,26 @@
     if(typeof DecompressionStream==='undefined')throw new Error('DecompressionStream unsupported');
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     const html=await new Response(stream).text();
+
+    // V2.24 UI hotfix: メール系バッジの左欠け防止 + favicon追加。
+    // 本体データやSupabase処理には触れず、表示だけを上書きする。
+    const favicon='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiNmN2ZhZmYiLz48cGF0aCBkPSJNMTIgMTVoNDBhNCA0IDAgMCAxIDQgNHYxMGE1IDUgMCAwIDAgMCAxMHY2YTQgNCAwIDAgMS00IDRIMTJhNCA0IDAgMCAxLTQtNHYtNmE1IDUgMCAwIDAgMC0xMFYxOWE0IDQgMCAwIDEgNC00WiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTc2ZmU1IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTkgMzJoMjR2MTVIMTl6IiBmaWxsPSIjZmZmIiBzdHJva2U9IiMxNzZmZTUiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Im0yMCAzNCAxMSA4IDExLTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzE3NmU1IiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjQ2IiBjeT0iNDYiIHI9IjExIiBmaWxsPSIjZWY0ZDVhIi8+PHBhdGggZD0ibTQxIDQ2IDMgMyA3LTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=';
+    const hotfix=`
+      <link rel="icon" type="image/svg+xml" href="${favicon}">
+      <link rel="apple-touch-icon" href="${favicon}">
+      <style id="v224-ui-hotfix">
+        .badge,.mail-status,.small-chip{line-height:1.2;overflow:visible}
+        .chip-row{display:flex!important;align-items:center;flex-wrap:wrap;gap:6px!important;row-gap:7px!important;padding:1px 1px 1px 4px!important;min-width:0;overflow:visible!important}
+        .small-chip{padding:5px 8px!important;min-height:26px;max-width:100%;flex:0 0 auto}
+        @media(max-width:390px){
+          .chip-row{padding-left:5px!important;gap:5px!important;row-gap:6px!important}
+          .small-chip{font-size:9.5px!important;padding:5px 7px!important;min-height:25px}
+        }
+      </style>`;
+    const patchedHtml=html.includes('</head>')?html.replace('</head>',hotfix+'</head>'):hotfix+html;
+
     document.open();
-    document.write(html);
+    document.write(patchedHtml);
     document.close();
   }catch(e){
     console.error(e);
