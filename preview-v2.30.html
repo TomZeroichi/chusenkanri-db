@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TOM 抽選マネージャー V2.30</title>
+<style>html,body{margin:0;min-height:100%;background:#f4f6fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}#v230diag{position:fixed;left:10px;top:10px;right:10px;z-index:2147483647;background:#fff;border:1px solid #ccd6e3;border-radius:10px;padding:10px 12px;color:#273444;font-size:12px;line-height:1.55;box-shadow:0 3px 14px rgba(0,0,0,.12)}#v230diag.ok{display:none}#v230diag.err{border-color:#e7a0a0;background:#fff5f5;color:#8f1d1d}</style>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+</head>
+<body>
+<div id="v230diag">V2.30 読み込み開始...</div>
+<script>
+(async function(){
+  let stage='開始';
+  function diag(msg,isErr){
+    let d=document.getElementById('v230diag');
+    if(!d){d=document.createElement('div');d.id='v230diag';document.body.prepend(d)}
+    d.className=isErr?'err':'';d.textContent='V2.30 / '+msg;
+  }
+  function fail(e){const m=String(e&&e.message||e||'不明なエラー');console.error(e);diag(stage+' で停止: '+m,true)}
+  window.addEventListener('error',e=>{if(e&&e.error)fail(e.error)});
+  window.addEventListener('unhandledrejection',e=>fail(e.reason));
+  try{
+    const prodConfig={url:'https://ofrkhysehruszttnqltt.supabase.co',key:'sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o'};
+    try{localStorage.setItem('tom_lottery_supabase_config_v2',JSON.stringify(prodConfig))}catch(e){}
+    if(!String.prototype.replaceAll){Object.defineProperty(String.prototype,'replaceAll',{value:function(a,b){return this.split(a).join(b)},configurable:true,writable:true})}
+    stage='pako確認';diag(stage+'...');
+    if(!window.pako||!window.pako.ungzip)throw new Error('pakoを読み込めませんでした');
+
+    stage='本体データ取得';diag(stage+'...');
+    const parts=[];
+    for(let n=1;n<=4;n++){
+      const r=await fetch('./assets/v2.24/app.gz.b64.part'+n,{cache:'no-store'});
+      if(!r.ok)throw new Error('本体データ'+n+' HTTP '+r.status);
+      parts.push(await r.text());
+    }
+    const b64=parts.join('').replace(/\s+/g,'');
+    const bin=atob(b64),bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+
+    stage='本体展開';diag(stage+'...');
+    let html=window.pako.ungzip(bytes,{to:'string'}).replaceAll('TOM 抽選マネージャー V2.24','TOM 抽選マネージャー V2.30');
+    const parsed=new DOMParser().parseFromString(html,'text/html');
+    const originalScripts=[...parsed.querySelectorAll('script')].map(s=>({src:s.getAttribute('src'),type:s.getAttribute('type')||'',text:s.textContent||''}));
+    [...parsed.head.children].forEach(node=>{if(node.tagName==='SCRIPT'||node.tagName==='TITLE'||node.tagName==='META')return;document.head.appendChild(node.cloneNode(true))});
+    document.title='TOM 抽選マネージャー V2.30';
+    document.body.innerHTML='<div id="v230diag">V2.30 / 本体HTML展開完了...</div>'+parsed.body.innerHTML;
+
+    function runScript(spec){return new Promise((resolve,reject)=>{
+      const s=document.createElement('script');if(spec.type)s.type=spec.type;
+      if(spec.src){s.src=new URL(spec.src,location.href).href;s.onload=resolve;s.onerror=()=>reject(new Error('script 404/読込失敗: '+spec.src));document.body.appendChild(s)}
+      else{try{s.textContent=spec.text;document.body.appendChild(s);resolve()}catch(e){reject(e)}}
+    })}
+
+    stage='本体スクリプト実行';diag(stage+'...');
+    for(const spec of originalScripts)await runScript(spec);
+
+    const patches=[
+      './loss-review-v2.25.js?v=2.30.0',
+      './mail-ui-cleanup-v2.25.js?v=2.30.0',
+      './progress-polish-v2.26.js?v=2.30.0',
+      './mail-settings-v2.27.js?v=2.30.0',
+      './hide-mail-badges-v2.27.js?v=2.30.0',
+      './member-admin-v2.27.js?v=2.30.0',
+      './auth-flow-v2.28.js?v=2.30.0'
+    ];
+    for(const src of patches){stage='追加パッチ '+src.split('?')[0];diag(stage+'...');await runScript({src,type:'',text:''})}
+
+    stage='画面初期化待ち';diag(stage+'...');
+    let tries=0;
+    const timer=setInterval(()=>{
+      tries++;
+      const app=document.getElementById('app'),auth=document.getElementById('authShell');
+      const visible=(app&&!app.classList.contains('hidden'))||(auth&&!auth.classList.contains('hidden'));
+      if(visible){clearInterval(timer);const d=document.getElementById('v230diag');if(d)d.className='ok'}
+      else if(tries>=20){clearInterval(timer);diag('画面初期化が完了しません。auth/app が非表示のままです。',true)}
+    },500);
+  }catch(e){fail(e)}
+})();
+</script>
+</body>
+</html>
