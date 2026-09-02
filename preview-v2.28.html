@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TOM 抽選マネージャー V2.28</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
+#loading{padding:24px;color:#4b5563;font-weight:700}
+#appFrame{display:none;border:0;width:100%;height:100dvh;min-height:100vh;background:#f4f6fa}
+</style>
+</head>
+<body>
+<div id="loading">TOM 抽選マネージャー V2.28 を読み込んでいます...</div>
+<iframe id="appFrame" title="TOM 抽選マネージャー V2.28"></iframe>
+<script type="module">
+(async()=>{
+  const loading=document.getElementById('loading');
+  const frame=document.getElementById('appFrame');
+  try{
+    const prodConfig={
+      url:'https://ofrkhysehruszttnqltt.supabase.co',
+      key:'sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o'
+    };
+    localStorage.setItem('tom_lottery_supabase_config_v2',JSON.stringify(prodConfig));
+
+    const base='./assets/v2.24/app.gz.b64.part';
+    const parts=await Promise.all([1,2,3,4].map(async n=>{
+      const r=await fetch(base+n,{cache:'no-store'});
+      if(!r.ok)throw new Error('asset '+n+' '+r.status);
+      return r.text();
+    }));
+    const b64=parts.join('').replace(/\s+/g,'');
+    const bin=atob(b64);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+
+    // Safari互換性優先：DecompressionStream / document.write に依存しない。
+    const {ungzip}=await import('https://cdn.jsdelivr.net/npm/pako@2.1.0/+esm');
+    let html=ungzip(bytes,{to:'string'});
+    html=html.replaceAll('TOM 抽選マネージャー V2.24','TOM 抽選マネージャー V2.28');
+
+    const patch=[
+      '<base href="https://tomzeroichi.github.io/chusenkanri-db/">',
+      '<script src="./loss-review-v2.25.js?v=2.28.2"><'+'/script>',
+      '<script src="./mail-ui-cleanup-v2.25.js?v=2.28.2"><'+'/script>',
+      '<script src="./progress-polish-v2.26.js?v=2.28.2"><'+'/script>',
+      '<script src="./mail-settings-v2.27.js?v=2.28.2"><'+'/script>',
+      '<script src="./hide-mail-badges-v2.27.js?v=2.28.2"><'+'/script>',
+      '<script src="./admin-members-v2.28.js?v=2.28.2"><'+'/script>',
+      '<script src="./auth-flow-v2.28.js?v=2.28.2"><'+'/script>'
+    ];
+    html=html.includes('</head>')?html.replace('</head>',patch[0]+'</head>'):patch[0]+html;
+    const bodyPatch=patch.slice(1).join('');
+    html=html.includes('</body>')?html.replace('</body>',bodyPatch+'</body>'):html+bodyPatch;
+
+    frame.srcdoc=html;
+    frame.addEventListener('load',()=>{
+      loading.style.display='none';
+      frame.style.display='block';
+    },{once:true});
+    setTimeout(()=>{
+      if(frame.style.display!=='block'){
+        loading.innerHTML='読み込みに時間がかかっています。<br>ページを再読み込みしてください。';
+      }
+    },12000);
+  }catch(e){
+    console.error(e);
+    loading.innerHTML='V2.28の読み込みに失敗しました。<br>Safariを閉じて開き直すか、ページを再読み込みしてください。';
+  }
+})();
+</script>
+</body>
+</html>
