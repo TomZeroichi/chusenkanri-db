@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TOM 抽選マネージャー V2.29</title>
+<style>html,body{margin:0;min-height:100%;background:#f4f6fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}#loading{padding:24px;color:#4b5563;font-weight:700;line-height:1.7}</style>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+</head>
+<body>
+<div id="loading">TOM 抽選マネージャー V2.29 を読み込んでいます...</div>
+<script>
+(async function(){
+  const loading=document.getElementById('loading');
+  try{
+    const prodConfig={url:'https://ofrkhysehruszttnqltt.supabase.co',key:'sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o'};
+    try{localStorage.setItem('tom_lottery_supabase_config_v2',JSON.stringify(prodConfig));}catch(e){}
+
+    // 古いSafari向けの最小互換処理
+    if(!Array.prototype.at){Object.defineProperty(Array.prototype,'at',{value:function(i){i=Math.trunc(i)||0;if(i<0)i+=this.length;return this[i];},configurable:true,writable:true});}
+    if(!String.prototype.replaceAll){Object.defineProperty(String.prototype,'replaceAll',{value:function(a,b){return this.split(a).join(b);},configurable:true,writable:true});}
+
+    if(!window.pako||!window.pako.ungzip)throw new Error('pakoの読み込みに失敗しました');
+    const base='./assets/v2.24/app.gz.b64.part';
+    const parts=[];
+    for(let n=1;n<=4;n++){
+      const r=await fetch(base+n,{cache:'no-store'});
+      if(!r.ok)throw new Error('本体データ'+n+'の取得に失敗: '+r.status);
+      parts.push(await r.text());
+    }
+    const b64=parts.join('').replace(/\s+/g,'');
+    const bin=atob(b64);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    let html=window.pako.ungzip(bytes,{to:'string'});
+    html=html.replaceAll('TOM 抽選マネージャー V2.24','TOM 抽選マネージャー V2.29');
+
+    const parsed=new DOMParser().parseFromString(html,'text/html');
+
+    // 元HTMLのCSS等を現在のページへコピー。scriptは後で順番に実行する。
+    [...parsed.head.children].forEach(node=>{
+      if(node.tagName==='SCRIPT'||node.tagName==='TITLE'||node.tagName==='META')return;
+      document.head.appendChild(node.cloneNode(true));
+    });
+    document.title='TOM 抽選マネージャー V2.29';
+
+    const originalScripts=[...parsed.querySelectorAll('script')].map(s=>({src:s.getAttribute('src'),type:s.getAttribute('type')||'',text:s.textContent||''}));
+    document.body.innerHTML=parsed.body.innerHTML;
+
+    async function runScript(spec){
+      await new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        if(spec.type)s.type=spec.type;
+        if(spec.src){s.src=new URL(spec.src,location.href).href;s.onload=resolve;s.onerror=()=>reject(new Error('script読込失敗: '+spec.src));document.body.appendChild(s);}
+        else{try{s.textContent=spec.text;document.body.appendChild(s);resolve();}catch(e){reject(e);}}
+      });
+    }
+
+    for(const spec of originalScripts)await runScript(spec);
+
+    const patches=[
+      './loss-review-v2.25.js?v=2.29.0',
+      './mail-ui-cleanup-v2.25.js?v=2.29.0',
+      './progress-polish-v2.26.js?v=2.29.0',
+      './mail-settings-v2.27.js?v=2.29.0',
+      './hide-mail-badges-v2.27.js?v=2.29.0',
+      './admin-members-v2.28.js?v=2.29.0',
+      './auth-flow-v2.28.js?v=2.29.0'
+    ];
+    for(const src of patches)await runScript({src,type:'',text:''});
+
+    // 本体が表示されない場合は白画面にせず診断表示を残す。
+    setTimeout(()=>{
+      const app=document.getElementById('app');
+      const auth=document.getElementById('authShell');
+      const visible=(app&&!app.classList.contains('hidden'))||(auth&&!auth.classList.contains('hidden'));
+      if(!visible){
+        const d=document.createElement('div');
+        d.style.cssText='margin:20px;padding:16px;border-radius:12px;background:#fff;color:#333;box-shadow:0 4px 16px rgba(0,0,0,.1);font-size:14px;line-height:1.7';
+        d.innerHTML='<b>読み込みが完了していません。</b><br>Safariでページを再読み込みしてください。改善しない場合はこの画面をスクリーンショットしてください。';
+        document.body.prepend(d);
+      }
+    },7000);
+  }catch(e){
+    console.error(e);
+    loading.innerHTML='<b>V2.29の読み込みに失敗しました。</b><br>'+String(e&&e.message||e)+'<br><br>この画面をスクリーンショットしてください。';
+  }
+})();
+</script>
+</body>
+</html>
