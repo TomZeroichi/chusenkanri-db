@@ -1,0 +1,74 @@
+name: Build V2.39 fast initial member state
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v239.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build fast state scripts and V2.39
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # 1) Progress polish: remove artificial first-load delay.
+          p = Path('compat/progress-polish-v2.26.js').read_text(encoding='utf-8')
+          p = p.replace('document.addEventListener("change", () => setTimeout(load, 700), true);', 'document.addEventListener("change", () => setTimeout(load, 80), true);')
+          p = p.replace('setTimeout(load, 700);\n    setTimeout(load, 2200);', 'load();\n    setTimeout(load, 900);')
+          Path('compat/progress-polish-fast-v2.39.js').write_text(p, encoding='utf-8')
+
+          # 2) Winner decoration / bulk archive: start immediately and suppress the old yellow flash.
+          m = Path('member-polish-v2.36.js').read_text(encoding='utf-8')
+          m = m.replace("    loadTimer=setTimeout(loadState,300);", "    loadTimer=setTimeout(loadState,60);")
+          m = m.replace("  function start(){\n    injectStyle();\n    observer.observe(document.documentElement,{childList:true,subtree:true});\n    setTimeout(loadState,650);", "  function start(){\n    injectStyle();\n    var pendingList=document.getElementById('lotteryList');\n    if(pendingList)pendingList.style.visibility='hidden';\n    observer.observe(document.documentElement,{childList:true,subtree:true});\n    loadState();")
+          m = m.replace("      lotteries=lRes&&lRes.data?lRes.data:[];\n      applyDom();", "      lotteries=lRes&&lRes.data?lRes.data:[];\n      applyDom();\n      var readyList=document.getElementById('lotteryList');\n      if(readyList)readyList.style.visibility='';")
+          m = m.replace("    }).catch(function(err){console.warn('[TOM V2.36] member polish load failed',err);});", "    }).catch(function(err){console.warn('[TOM V2.39] member polish load failed',err);var readyList=document.getElementById('lotteryList');if(readyList)readyList.style.visibility='';});")
+          Path('member-polish-fast-v2.39.js').write_text(m, encoding='utf-8')
+
+          # 3) Winner deadlines: no 750ms wait and much faster DOM refresh.
+          d = Path('winner-deadlines-v2.37.js').read_text(encoding='utf-8')
+          d = d.replace("    loadTimer=setTimeout(loadState,280);", "    loadTimer=setTimeout(loadState,60);")
+          d = d.replace("    setTimeout(loadState,750);", "    loadState();")
+          Path('winner-deadlines-fast-v2.39.js').write_text(d, encoding='utf-8')
+
+          # 4) Top winner deadline sync: no 700ms wait.
+          t = Path('winner-top-deadlines-v2.38.js').read_text(encoding='utf-8')
+          t = t.replace("    applyTimer=setTimeout(applyDom,80);", "    applyTimer=setTimeout(applyDom,20);")
+          t = t.replace("    setTimeout(loadState,700);", "    loadState();")
+          Path('winner-top-deadlines-fast-v2.39.js').write_text(t, encoding='utf-8')
+
+          # 5) Build V2.39 from V2.38, replacing the delayed scripts with fast versions.
+          html = Path('preview-v2.38.html').read_text(encoding='utf-8')
+          html = html.replace('TOM 抽選マネージャー V2.38', 'TOM 抽選マネージャー V2.39')
+          html = html.replace('./compat/progress-polish-v2.26.js?v=2.34.0', './compat/progress-polish-fast-v2.39.js?v=2.39.0')
+          html = html.replace('./member-polish-v2.36.js?v=2.36.1', './member-polish-fast-v2.39.js?v=2.39.0')
+          html = html.replace('./winner-deadlines-v2.37.js?v=2.37.1', './winner-deadlines-fast-v2.39.js?v=2.39.0')
+          html = html.replace('./winner-top-deadlines-v2.38.js?v=2.38.1', './winner-top-deadlines-fast-v2.39.js?v=2.39.0')
+          Path('preview-v2.39.html').write_text(html, encoding='utf-8')
+
+          index = '''<!doctype html>
+          <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.39.html?v=2391"><title>TOM 抽選マネージャー</title><script>location.replace('./preview-v2.39.html?v=2391');</script></head><body><p><a href="./preview-v2.39.html?v=2391">TOM 抽選マネージャー V2.39 を開く</a></p></body></html>'''
+          Path('index.html').write_text(index, encoding='utf-8')
+          PY
+
+      - name: Commit V2.39
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.39.html index.html compat/progress-polish-fast-v2.39.js member-polish-fast-v2.39.js winner-deadlines-fast-v2.39.js winner-top-deadlines-fast-v2.39.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.39 faster initial winner state"
+          git push
