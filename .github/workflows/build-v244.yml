@@ -1,0 +1,41 @@
+name: Build V2.44 stable mail wizard
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v244.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build V2.44 from V2.43
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          src = Path('preview-v2.43.html').read_text(encoding='utf-8')
+          html = src.replace('TOM 応募・抽選マネージャー V2.43', 'TOM 応募・抽選マネージャー V2.44')
+          html = html.replace('<script src="./mail-wizard-v2.41.js?v=2.41.0"></script>', '<script src="./mail-wizard-stable-v2.44.js?v=2.44.0"></script>')
+          Path('preview-v2.44.html').write_text(html, encoding='utf-8')
+          index = '''<!doctype html>\n<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.44.html?v=2441"><title>TOM 応募・抽選マネージャー</title><script>location.replace('./preview-v2.44.html?v=2441');</script></head><body><p><a href="./preview-v2.44.html?v=2441">TOM 応募・抽選マネージャー V2.44 を開く</a></p></body></html>'''
+          Path('index.html').write_text(index, encoding='utf-8')
+          PY
+
+      - name: Commit V2.44
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.44.html index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.44 stable mail wizard"
+          git push
