@@ -1,0 +1,1547 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>TOM 抽選マネージャー V2.32</title>
+  <style>
+    :root{
+      --bg:#f4f6fa;--card:#fff;--text:#1e2430;--muted:#7b8494;--line:#dfe4ec;
+      --blue:#3d83ef;--blue-dark:#2469ce;--blue-soft:#eaf3ff;
+      --danger:#e34855;--danger-soft:#fff0f2;--success:#21a36b;--warn:#f5a623;
+      --shadow:0 7px 24px rgba(28,39,61,.08);
+      --pokemon:#ffe600;--pokemon-soft:#fffec7;--pokemon-text:#4a4000;
+      --onepiece:#d91f4e;--onepiece-soft:#ffe3ec;
+      --dragonball:#ff9f1a;--dragonball-soft:#fff1bf;
+      --other:#25a7ff;--other-soft:#e2f5ff;
+    }
+    *{box-sizing:border-box}
+    html{background:var(--bg)}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .hidden{display:none!important}
+    .app{max-width:820px;margin:0 auto;padding:14px 12px 42px}
+    .header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .header-title h1{font-size:20px;margin:0;font-weight:900;letter-spacing:-.02em}
+    .header-title p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+    .header-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800;border:1px solid var(--line);background:var(--card)}
+    .badge.cloud{color:var(--success);border-color:#bfe9d4;background:#f1fbf6}
+    .badge.demo{color:#9b6b00;border-color:#f1dfa5;background:#fffaf0}
+    .icon-btn,.soft-btn,.primary-btn,.danger-btn{border:0;border-radius:11px;min-height:40px;padding:9px 12px;font-weight:800}
+    .icon-btn{width:40px;padding:0;background:var(--card);border:1px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.03)}
+    .soft-btn{background:var(--card);border:1px solid var(--line);color:var(--text)}
+    .primary-btn{background:var(--blue);color:#fff}
+    .primary-btn:hover{background:var(--blue-dark)}
+    .danger-btn{background:var(--danger-soft);color:var(--danger);border:1px solid #f4c7cd}
+    .primary-btn:disabled,.soft-btn:disabled{opacity:.45;cursor:not-allowed}
+    .tabbar{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:8px 0 12px}
+    .tabbar button{border:1px solid var(--line);background:var(--card);padding:10px;border-radius:12px;font-weight:900;color:var(--muted)}
+    .tabbar button.active{background:var(--blue);border-color:var(--blue);color:#fff}
+    .notice{border:1px solid #d7e6ff;background:#f5f9ff;border-radius:13px;padding:11px 12px;font-size:12px;color:#42628f;margin:10px 0}
+    .notice.warn{border-color:#f1dda0;background:#fffaf0;color:#8c6600}
+    .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}
+    .summary-card{background:var(--card);border:2px solid #aeb9c9;border-radius:14px;padding:8px 6px;box-shadow:0 2px 10px rgba(0,0,0,.03);min-width:0;aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .summary-grid .summary-card:nth-child(1){background:#dbeeff;border-color:#6da9dd}
+    .summary-grid .summary-card:nth-child(2){background:#f7f29a;border-color:#c9bd24}
+    .summary-grid .summary-card:nth-child(3){background:#f9d9e4;border-color:#d97593}
+    .summary-grid .summary-card:nth-child(4){background:#f7e39a;border-color:#ceaa2f}
+    .summary-label{font-size:17px;color:#38465a;font-weight:900;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;text-align:center}
+    .summary-value{font-size:30px;line-height:1;font-weight:900;margin-top:5px;text-align:center;color:#1d2736}
+    .toolbar{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:10px;margin-bottom:12px}
+    .search-row{display:grid;grid-template-columns:minmax(0,1fr) 145px;gap:8px}
+    .control{width:100%;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:11px;padding:10px 11px;outline:none}
+    .control:focus{border-color:#9ec2f8;box-shadow:0 0 0 3px #eaf3ff}
+    textarea.control{min-height:118px;resize:vertical}
+    .category-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .cat-filter{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:900}
+    .cat-filter.active[data-cat="all"]{background:#1f2734;color:#fff;border-color:#1f2734}
+    .cat-filter.active[data-cat="pokemon"]{background:var(--pokemon);color:#332b00;border-color:var(--pokemon)}
+    .cat-filter.active[data-cat="onepiece"]{background:var(--onepiece);color:#fff;border-color:var(--onepiece)}
+    .cat-filter.active[data-cat="dragonball"]{background:var(--dragonball);color:#fff;border-color:var(--dragonball)}
+    .cat-filter.active[data-cat="other"]{background:var(--other);color:#fff;border-color:var(--other)}
+    .list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 2px 8px}
+    .list-head h2{font-size:15px;margin:0;font-weight:900}
+    .sort-select{width:auto;min-width:150px;padding:8px 9px;font-size:12px}
+    .lottery-list{display:flex;flex-direction:column;gap:8px}
+    .lottery-row{position:relative;border:2px solid var(--line);border-left-width:0;border-radius:16px;background:var(--card);overflow:hidden;box-shadow:0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:10px;background:var(--strip-color,var(--line));z-index:1}
+    .lottery-row.pokemon{--strip-color:var(--pokemon);border-color:rgba(255,230,0,.72);background:var(--pokemon-soft);box-shadow:0 0 0 1px rgba(255,230,0,.55),0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row.onepiece{--strip-color:var(--onepiece);border-color:rgba(217,31,78,.38);background:var(--onepiece-soft);box-shadow:0 0 0 1px rgba(217,31,78,.28),0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row.dragonball{--strip-color:var(--dragonball);border-color:rgba(255,159,26,.45);background:var(--dragonball-soft);box-shadow:0 0 0 1px rgba(255,159,26,.32),0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row.other{--strip-color:var(--other);border-color:rgba(37,167,255,.36);background:var(--other-soft);box-shadow:0 0 0 1px rgba(37,167,255,.26),0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row.multi-2::before{background:linear-gradient(to bottom,var(--multi1) 0 50%,var(--multi2) 50% 100%)}
+    .lottery-row.multi-3::before{background:linear-gradient(to bottom,var(--multi1) 0 33.33%,var(--multi2) 33.33% 66.66%,var(--multi3) 66.66% 100%)}
+    .lottery-row.multi-4::before{background:linear-gradient(to bottom,var(--multi1) 0 25%,var(--multi2) 25% 50%,var(--multi3) 50% 75%,var(--multi4) 75% 100%)}
+    .row-summary{width:100%;border:0;background:transparent;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 9px 10px 18px;text-align:left}
+    .lottery-row.pokemon .row-summary{background:rgba(255,246,145,.52)}
+    .lottery-row.onepiece .row-summary{background:rgba(255,183,205,.38)}
+    .lottery-row.dragonball .row-summary{background:rgba(255,214,125,.45)}
+    .lottery-row.other .row-summary{background:rgba(168,228,255,.42)}
+    .row-main{min-width:0}
+    .meta-line{display:flex;align-items:center;gap:6px;min-width:0;margin-bottom:4px;flex-wrap:wrap}
+    .brand-label,.unapplied-badge,.small-chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-weight:900;white-space:nowrap}
+    .brand-stack{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;max-width:100%}
+    .brand-label{padding:4px 7px;font-size:10px;letter-spacing:.03em}
+    .category-multi{display:flex;flex-wrap:wrap;gap:7px}
+    .category-choice{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 11px;font-size:11px;font-weight:900}
+    .category-choice.active[data-value="pokemon"]{background:var(--pokemon);border-color:var(--pokemon);color:#332b00}
+    .category-choice.active[data-value="onepiece"]{background:var(--onepiece);border-color:var(--onepiece);color:#fff}
+    .category-choice.active[data-value="dragonball"]{background:var(--dragonball);border-color:var(--dragonball);color:#fff}
+    .category-choice.active[data-value="other"]{background:var(--other);border-color:var(--other);color:#fff}
+    .brand-label.pokemon{background:var(--pokemon);color:#332b00}
+    .brand-label.onepiece{background:var(--onepiece);color:#fff}
+    .brand-label.dragonball{background:var(--dragonball);color:#fff}
+    .brand-label.other{background:var(--other);color:#fff}
+    .unapplied-badge{width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;flex:0 0 28px;line-height:1;background:var(--blue);color:#fff;font-size:12px;padding:0;aspect-ratio:1/1}
+    .store-name{font-size:13px;color:#6e7888;font-weight:800;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.2;word-break:break-word}.store-line{min-width:0;margin-bottom:4px;padding-left:2px}
+    .item-title{font-size:16px;line-height:1.25;font-weight:900;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:break-word;padding-left:2px}
+    .deadline-wrap{display:flex;align-items:center;gap:6px}
+    .deadline-box{width:92px;border-radius:13px;padding:6px 7px;text-align:center;background:#fff;border:2px solid rgba(0,0,0,.08);color:var(--text)}
+    .deadline-box.soon{background:#ffd6a0;border-color:#f0a34a;color:var(--danger)}
+    .deadline-box.tomorrow{background:#ffd6a0;border-color:#f0a34a;color:var(--danger)}
+    .deadline-box.today{background:var(--danger);border-color:var(--danger);color:#fff}
+    .deadline-label{font-size:9px;font-weight:900;letter-spacing:.1em;color:var(--muted)}
+    .deadline-box.soon .deadline-label{color:var(--danger)}
+    .deadline-box.tomorrow .deadline-label{color:var(--danger)}
+    .deadline-box.today .deadline-label{color:#fff}
+    .deadline-date-row{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:2px}
+    .deadline-date{font-size:26px;line-height:1;font-weight:1000;letter-spacing:-.06em}
+    .weekday-badge{width:18px;height:18px;flex:0 0 18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid #cfd6e1;color:#657185;font-size:9px;font-weight:1000;line-height:1}
+    .weekday-badge.sat{color:#2474d8;border-color:#9fc2ee;background:#f4f9ff}
+    .weekday-badge.sun{color:#d93c4b;border-color:#efadb5;background:#fff7f8}
+    .deadline-box.today .weekday-badge{background:#fff;border-color:#fff}
+    .deadline-time{font-size:10px;font-weight:900;margin-top:3px}
+    .deadline-left{font-size:10px;font-weight:900;color:var(--danger);margin-top:2px}
+    .deadline-box.soon .deadline-left{color:var(--danger)}
+    .deadline-box.tomorrow .deadline-left{color:var(--danger)}
+    .deadline-box.today .deadline-left{color:#fff}
+    .chevron{font-size:18px;color:var(--muted);transition:transform .18s}
+    .lottery-row.open .chevron{transform:rotate(180deg)}
+    .details{display:none;padding:12px 12px 12px 18px;border-top:1px solid var(--line)}
+    .lottery-row.open .details{display:block}
+    .chip-row{display:flex;gap:6px;flex-wrap:wrap}
+    .small-chip{font-size:10px;padding:5px 7px;border:1px solid var(--line);background:#fff;color:var(--muted)}
+    .small-chip.warn{background:#fff8e9;color:#9a6a00;border-color:#f1dda4}
+    .small-chip.ok{background:#effaf5;color:#1f8d5e;border-color:#c8ead9}
+    .small-chip.mail{background:#eef6ff;color:#1769aa;border-color:#c9def5}
+    .small-chip.review{background:#fff0f2;color:#b73244;border-color:#f0c4cb}
+    .progress-box{margin-top:10px}
+    .progress-head{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px}
+    .progress-track{height:9px;background:#edf0f5;border-radius:999px;overflow:hidden}
+    .progress-bar{height:100%;border-radius:999px;background:var(--blue)}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+    .info-box{border:1px solid var(--line);border-radius:12px;padding:9px}
+    .info-label{font-size:10px;color:var(--muted);font-weight:800}
+    .info-value{font-size:12px;font-weight:900;margin-top:3px}
+    .link-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:10px}
+    .action-link{display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:11px;text-decoration:none;border:1px solid var(--line);background:#fff;color:var(--text);font-size:12px;font-weight:900;padding:8px;text-align:center;word-break:break-word}
+    .action-link.entry{background:var(--blue);color:#fff;border-color:var(--blue)}
+    .status-control-box{margin-top:11px;border-top:1px solid var(--line);padding-top:10px}
+    .status-control-label{font-size:11px;color:var(--muted);font-weight:900;margin-bottom:6px}
+    .status-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:7px}
+    .personal-note{margin-top:10px}
+    .personal-note textarea{min-height:72px}
+    .admin-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+    .add-card,.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:14px;box-shadow:0 2px 10px rgba(25,36,58,.03)}
+    .add-head,.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .add-head h3,.panel-head h3{font-size:14px;margin:0;font-weight:900}
+    .add-head p,.panel-head p{margin:3px 0 0;color:var(--muted);font-size:11px}
+    .add-body{display:none;margin-top:10px}
+    .add-card.open .add-body{display:block}
+    .helper{font-size:11px;color:var(--muted);margin:6px 0 0;line-height:1.55}
+    .preview{display:none;border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+    .preview.show{display:block}
+    .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .field{display:block}
+    .field.full{grid-column:1/-1}
+    .field>span{display:block;font-size:10px;color:var(--muted);font-weight:900;margin:0 0 5px}
+    .date-wrap{border:1px solid var(--line);border-radius:11px;padding:10px 11px;background:#fff}
+    .date-wrap input{width:100%;border:0;background:transparent;padding:0;min-width:0}
+    .link-editor{display:flex;flex-direction:column;gap:6px}
+    .link-row{display:grid;grid-template-columns:120px minmax(0,1fr) 38px;gap:6px}
+    .link-row input,.link-row select{min-width:0}
+    .link-remove{border:1px solid var(--line);background:#fff;border-radius:10px;font-weight:900;color:var(--danger)}
+    .table-list{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+    .member-row,.catalog-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px 10px}
+    .member-main,.catalog-main{min-width:0}
+    .member-email,.catalog-title{font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .member-meta,.catalog-meta{font-size:10px;color:var(--muted);margin-top:3px}
+    .member-actions{display:flex;gap:5px;align-items:center}
+    .member-actions select{width:110px;padding:7px 8px;font-size:11px}
+    .empty{padding:28px 12px;text-align:center;color:var(--muted);font-size:12px}
+    .archive-wrap{margin-top:14px}
+    .archive-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px 14px;font-weight:900;color:var(--text)}
+    .archive-toggle .left{display:flex;align-items:center;gap:8px}
+    .archive-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:#eef2f7;color:#445061;font-size:12px;font-weight:900}
+    .archive-body{display:none;margin-top:10px}
+    .archive-wrap.open .archive-body{display:block}
+    .archive-note{font-size:11px;color:var(--muted);margin:0 0 8px 2px}
+    .auth-shell{max-width:520px;margin:55px auto;padding:14px}
+    .auth-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
+    .auth-card h1{font-size:21px;margin:0 0 5px;font-weight:1000}
+    .auth-card p{font-size:12px;color:var(--muted);line-height:1.6}
+    .auth-grid{display:grid;gap:9px;margin-top:14px}
+    .auth-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .setup-box{border:1px solid var(--line);background:#fafbfc;border-radius:13px;padding:10px;margin-top:12px}
+    .setup-box code{font-size:10px;word-break:break-all}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(20,29,43,.45);display:none;align-items:flex-end;justify-content:center;padding:10px;z-index:50}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:14px;box-shadow:0 16px 50px rgba(0,0,0,.2)}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .modal-head h3{margin:0;font-size:15px;font-weight:900}
+    .modal-close{border:0;background:#f0f2f6;border-radius:999px;width:34px;height:34px;font-size:20px}
+    .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#1f2734;color:#fff;border-radius:999px;padding:10px 14px;font-size:12px;font-weight:800;transition:.2s;z-index:80;max-width:90vw;text-align:center}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .section-switch{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+    .section-switch button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:900}
+    .section-switch button.active{background:#1f2734;color:#fff;border-color:#1f2734}
+    .mail-connect-card{background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid #cfe0f6;border-radius:16px;padding:12px;margin-bottom:12px;box-shadow:0 2px 10px rgba(25,36,58,.03)}
+    .mail-connect-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .mail-connect-head h3{font-size:14px;margin:0;font-weight:1000}.mail-connect-head p{margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
+    .mail-status{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:1000;border:1px solid var(--line);white-space:nowrap}
+    .mail-status.connected{background:#effaf5;border-color:#bce5d0;color:#16895a}.mail-status.pending{background:#fff8e9;border-color:#efd99d;color:#946600}.mail-status.off{background:#f2f4f7;color:#697485}
+    .mail-address-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;margin-top:10px}.mail-address{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 11px;font-size:12px;font-weight:900;word-break:break-all;min-width:0}
+    .mail-connect-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.mail-connect-actions button{flex:1;min-width:130px}
+    .mail-verify-box{margin-top:9px;border:1px solid #efd99d;background:#fffaf0;border-radius:12px;padding:10px}.mail-verify-code{font-size:22px;font-weight:1000;letter-spacing:.08em;margin-top:4px}
+    .mail-event-list{display:flex;flex-direction:column;gap:6px;margin-top:9px}.mail-event-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:7px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:11px;padding:8px 9px}.mail-event-icon{font-size:17px}.mail-event-main{min-width:0}.mail-event-title{font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mail-event-meta{font-size:9px;color:var(--muted);margin-top:2px}.mail-event-time{font-size:9px;color:var(--muted);white-space:nowrap}
+    .copy-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:9px;word-break:break-all}
+    .step-list{counter-reset:step;display:flex;flex-direction:column;gap:8px;margin-top:10px}.step-item{position:relative;padding:10px 10px 10px 42px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:12px;line-height:1.6}.step-item:before{counter-increment:step;content:counter(step);position:absolute;left:10px;top:10px;width:23px;height:23px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font-size:11px;font-weight:1000}
+    @media(max-width:620px){
+      .summary-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+      .summary-card{padding:7px 5px;border-radius:12px}
+      .summary-label{font-size:14px;color:#38465a}
+      .summary-value{font-size:24px}
+      .search-row{grid-template-columns:minmax(0,1fr) 120px}
+      .field-grid{grid-template-columns:1fr}
+      .field.full{grid-column:auto}
+      .link-grid{grid-template-columns:1fr 1fr}
+      .link-row{grid-template-columns:100px minmax(0,1fr) 36px}
+      .header-title p{display:none}
+    }
+    @media(max-width:390px){
+      .app{padding-left:9px;padding-right:9px}
+      .summary-grid{gap:4px}
+      .summary-card{padding:6px 4px;border-radius:11px}
+      .summary-label{font-size:13px;color:#38465a}
+      .summary-value{font-size:21px}
+      .item-title{font-size:14px}
+      .deadline-box{width:82px}
+      .deadline-date{font-size:23px}
+      .brand-label{font-size:9px}
+      .search-row{grid-template-columns:1fr}
+      .link-grid{grid-template-columns:1fr}
+      .header-actions .badge.account{display:none}
+    }
+  </style>
+
+<script>
+try{
+  localStorage.setItem('tom_lottery_supabase_config_v2',JSON.stringify({
+    url:'https://ofrkhysehruszttnqltt.supabase.co',
+    key:'sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o'
+  }));
+}catch(e){}
+</script>
+</head>
+<body>
+  <div id="authShell" class="auth-shell">
+    <section class="auth-card">
+      <h1>TOM 抽選マネージャー V2.32</h1>
+      <p>運営が抽選情報を一括更新し、各会員は自分だけの応募状況を管理する有料会員向け版です。</p>
+
+      <div id="modeChoice">
+        <div class="setup-box">
+          <strong>まず試す</strong>
+          <p>Supabase未接続でもデモモードで運営画面・会員画面を確認できます。</p>
+          <button class="primary-btn" id="startDemoBtn" style="width:100%">デモモードで開始</button>
+        </div>
+        <div class="setup-box">
+          <strong>本番DBへ接続</strong>
+          <p>Supabaseの Project URL と Publishable / anon key を設定します。service_role key は入力しないでください。</p>
+          <div class="auth-grid">
+            <input class="control" id="setupUrl" placeholder="https://xxxxx.supabase.co">
+            <input class="control" id="setupKey" placeholder="Publishable key / anon key">
+            <button class="soft-btn" id="saveSetupBtn">接続設定を保存</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="loginBox" class="hidden">
+        <div class="notice" id="connectionNotice"></div>
+        <div class="auth-grid">
+          <input class="control" id="loginEmail" type="email" placeholder="メールアドレス" autocomplete="email">
+          <input class="control" id="loginPassword" type="password" placeholder="パスワード" autocomplete="current-password">
+          <button class="primary-btn" id="loginBtn">ログイン</button>
+          <button class="soft-btn" id="signupBtn">新規登録</button>
+          <button class="soft-btn" id="backSetupBtn">接続設定へ戻る</button>
+        </div>
+        <p class="helper">新規登録した会員は「承認待ち」になります。運営が会員管理画面で「有効」にすると抽選一覧を利用できます。</p>
+      </div>
+    </section>
+  </div>
+
+  <main id="app" class="app hidden">
+    <header class="header">
+      <div class="header-title">
+        <h1>抽選エントリー管理</h1>
+        <p>運営共通データ × 会員ごとの個別進捗</p>
+      </div>
+      <div class="header-actions">
+        <span class="badge demo" id="modeBadge">DEMO</span>
+        <span class="badge account" id="accountBadge">demo</span>
+        <button class="icon-btn" id="configBtn" title="接続設定">⚙</button>
+        <button class="icon-btn" id="logoutBtn" title="ログアウト">↪</button>
+      </div>
+    </header>
+
+    <div class="tabbar" id="roleTabs">
+      <button id="memberTabBtn" class="active">会員画面</button>
+      <button id="adminTabBtn">運営画面</button>
+    </div>
+
+    <div id="inactiveNotice" class="notice warn hidden">
+      このアカウントはまだ有料会員として有効化されていません。運営による承認後に抽選一覧を利用できます。
+    </div>
+
+    <section id="memberView">
+      <section class="mail-connect-card" id="mailConnectCard">
+        <div class="mail-connect-head">
+          <div><h3>📩 メール連携</h3><p>抽選案内・応募完了・当選/落選・購入完了を自動で反映します。</p></div>
+          <span class="mail-status off" id="mailConnectStatus">未設定</span>
+        </div>
+        <div class="mail-address-row">
+          <div class="mail-address" id="mailForwardAddress">受信アドレス準備中</div>
+          <button class="soft-btn" id="copyMailAddressBtn">コピー</button>
+        </div>
+        <div class="mail-connect-actions">
+          <button class="primary-btn" id="openMailSetupBtn">初回設定をする</button>
+          <button class="soft-btn" id="refreshMailBtn">状態を更新</button>
+        </div>
+        <div id="mailVerifyInline" class="mail-verify-box hidden"></div>
+        <div id="mailLastReceived" class="helper"></div>
+        <div id="mailRecentWrap" class="hidden">
+          <div class="status-control-label" style="margin-top:10px">最近の自動処理</div>
+          <div class="mail-event-list" id="mailEventList"></div>
+        </div>
+      </section>
+
+      <section class="summary-grid" aria-label="集計">
+        <div class="summary-card"><div class="summary-label">管理中</div><div class="summary-value" id="countTotal">0</div></div>
+        <div class="summary-card"><div class="summary-label">未応募</div><div class="summary-value" id="countUnapplied">0</div></div>
+        <div class="summary-card"><div class="summary-label">本日締切</div><div class="summary-value" id="countToday">0</div></div>
+        <div class="summary-card"><div class="summary-label">3日以内</div><div class="summary-value" id="countSoon">0</div></div>
+      </section>
+
+      <section class="toolbar">
+        <div class="search-row">
+          <input class="control" id="searchInput" type="search" placeholder="店舗・商品を検索">
+          <select class="control" id="statusFilter" aria-label="状態で絞り込み">
+            <option value="all">すべて</option>
+            <option value="未応募">未応募</option>
+            <option value="結果待ち">結果待ち</option>
+            <option value="当選">当選</option>
+            <option value="購入済み">購入済み</option>
+            <option value="完了">完了</option>
+            <option value="落選">落選</option>
+          </select>
+        </div>
+        <div class="category-row" id="categoryFilters">
+          <button class="cat-filter active" data-cat="all">すべて</button>
+          <button class="cat-filter" data-cat="pokemon">POKÉMON</button>
+          <button class="cat-filter" data-cat="onepiece">ONE PIECE</button>
+          <button class="cat-filter" data-cat="dragonball">DRAGON BALL</button>
+          <button class="cat-filter" data-cat="other">OTHER / TOY</button>
+        </div>
+      </section>
+
+      <div class="list-head">
+        <h2>抽選一覧</h2>
+        <select class="control sort-select" id="sortSelect">
+          <option value="deadline">締切が近い順</option>
+          <option value="newest">登録が新しい順</option>
+          <option value="store">店舗順</option>
+        </select>
+      </div>
+
+      <section class="lottery-list" id="lotteryList"></section>
+      <div class="empty" id="emptyState" hidden>該当する抽選がありません。</div>
+
+      <section class="archive-wrap" id="archiveWrap">
+        <button class="archive-toggle" id="archiveToggle" type="button" aria-expanded="false">
+          <span class="left"><span>アーカイブ</span><span class="archive-count" id="archiveCount">0</span></span>
+          <span id="archiveChevron">⌄</span>
+        </button>
+        <div class="archive-body" id="archiveBody">
+          <p class="archive-note">完了・落選になった抽選はここに移動します。ステータスを変更すれば一覧へ戻せます。</p>
+          <section class="lottery-list" id="archiveList"></section>
+          <div class="empty" id="archiveEmpty" hidden>アーカイブはありません。</div>
+        </div>
+      </section>
+    </section>
+
+    <section id="adminView" class="hidden">
+      <div class="notice">
+        運営が編集するのは「抽選情報そのもの」です。会員の「未応募・結果待ち・当選」などの進捗は各会員の個別データとして保存され、抽選情報を編集しても保持されます。
+      </div>
+
+      <div class="section-switch">
+        <button class="active" data-admin-section="lotteries">抽選管理</button>
+        <button data-admin-section="members">会員管理</button>
+        <button data-admin-section="catalog">商品マスタ</button>
+        <button data-admin-section="tools">移行・設定</button>
+      </div>
+
+      <div id="adminLotteries">
+        <section class="add-card" id="addCard">
+          <div class="add-head">
+            <div>
+              <h3>新しい抽選を追加</h3>
+              <p>投稿文をそのまま貼り付けて解析</p>
+            </div>
+            <button class="primary-btn" id="toggleAddBtn">＋追加</button>
+          </div>
+          <div class="add-body">
+            <textarea class="control" id="sourceText" placeholder="抽選情報をここに貼り付けてください"></textarea>
+            <p class="helper">店舗名・商品名・受付期間・締切時刻・受取方法・会員登録・URLを自動認識します。</p>
+            <p class="helper">「会員登録」「応募フォーム」などURL直前の見出しを優先してリンク名を判定します。</p>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="primary-btn" id="analyzeBtn" style="flex:1">解析する</button>
+              <button class="soft-btn" id="clearSourceBtn">クリア</button>
+            </div>
+
+            <div class="preview" id="previewArea">
+              <div class="field-grid">
+                <label class="field"><span>店舗名</span><input class="control" id="pStore"></label>
+                <label class="field"><span>カテゴリ（複数可）</span>
+                  <div class="category-multi" id="pCategorySelector"></div>
+                </label>
+                <label class="field full"><span>タイトル</span><input class="control" id="pTitle"></label>
+                <label class="field"><span>受付開始日</span><div class="date-wrap"><input id="pStart" type="date"></div></label>
+                <label class="field"><span>締切日</span><div class="date-wrap"><input id="pDeadline" type="date"></div></label>
+                <label class="field"><span>締切時刻</span><input class="control" id="pDeadlineTime" type="time"></label>
+                <label class="field"><span>受取方法</span>
+                  <select class="control" id="pPickup">
+                    <option value="店舗受取">店舗受取</option>
+                    <option value="全国配送">全国配送</option>
+                    <option value="配送">配送</option>
+                    <option value="未確認">未確認</option>
+                  </select>
+                </label>
+                <label class="field"><span>応募方法</span>
+                  <select class="control" id="pApplyMethod">
+                    <option value="Web">Webフォーム</option>
+                    <option value="アプリ">アプリ</option>
+                    <option value="店頭">店頭</option>
+                    <option value="その他">その他</option>
+                    <option value="未確認">未確認</option>
+                  </select>
+                </label>
+                <label class="field"><span>会員登録</span>
+                  <select class="control" id="pMembership">
+                    <option value="required">必要</option>
+                    <option value="not_required">不要 / 記載なし</option>
+                  </select>
+                </label>
+                <label class="field full"><span>会員条件表示</span><input class="control" id="pMembershipLabel" placeholder="例：アプリ会員限定"></label>
+                <label class="field full"><span>応募条件</span><input class="control" id="pExtraRequirement" placeholder="例：プレイヤーID必須"></label>
+                <label class="field full"><span>メモ</span><textarea class="control" id="pNote" style="min-height:80px"></textarea></label>
+                <div class="field full">
+                  <span>リンク</span>
+                  <div class="link-editor" id="pLinks"></div>
+                  <button class="soft-btn" id="addLinkBtn" style="margin-top:7px">＋リンク追加</button>
+                </div>
+              </div>
+              <button class="primary-btn" id="savePreviewBtn" style="width:100%;margin-top:12px">全会員向けに登録</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="list-head">
+          <h2>運営登録済み抽選</h2>
+          <span class="badge" id="adminLotteryCount">0件</span>
+        </div>
+        <section class="lottery-list" id="adminLotteryList"></section>
+      </div>
+
+      <div id="adminMembers" class="hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h3>会員管理</h3><p>支払い確認後に「有効」へ変更</p></div>
+            <button class="soft-btn" id="refreshMembersBtn">更新</button>
+          </div>
+          <div class="table-list" id="memberList"></div>
+          <div class="empty" id="memberEmpty" hidden>会員データがありません。</div>
+        </section>
+      </div>
+
+      <div id="adminCatalog" class="hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h3>商品マスタ</h3><p>商品名からカテゴリとタイトルを自動認識</p></div>
+          </div>
+          <div class="field-grid" style="margin-top:10px">
+            <label class="field"><span>カテゴリ</span>
+              <select class="control" id="catalogCategory">
+                <option value="pokemon">POKÉMON</option>
+                <option value="onepiece">ONE PIECE</option>
+                <option value="dragonball">DRAGON BALL</option>
+                <option value="other">OTHER / TOY</option>
+              </select>
+            </label>
+            <label class="field"><span>発売日</span><div class="date-wrap"><input id="catalogRelease" type="date"></div></label>
+            <label class="field full"><span>商品名</span><input class="control" id="catalogName" placeholder="例：決戦の刻"></label>
+            <label class="field full"><span>別名・型番（カンマ区切り）</span><input class="control" id="catalogAliases" placeholder="OP-16, OP16"></label>
+          </div>
+          <button class="primary-btn" id="addCatalogBtn" style="width:100%;margin-top:9px">商品マスタに追加</button>
+          <div class="table-list" id="catalogList"></div>
+        </section>
+      </div>
+
+      <div id="adminTools" class="hidden">
+        <section class="panel">
+          <div class="panel-head"><div><h3>V1から移行</h3><p>現在の端末に残っているV1データを取り込み</p></div></div>
+          <p class="helper">デモモードではV2初回起動時に自動移行します。本番DBでは、運営ログイン後にこのボタンで既存V1抽選を共通DBへ登録できます。</p>
+          <button class="soft-btn" id="migrateV1Btn" style="width:100%;margin-top:8px">V1ローカルデータを取り込む</button>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h3>会員メール自動連携</h3><p>専用転送アドレス → Cloudflare Email Worker → Supabase</p></div></div>
+          <p class="helper">会員ごとに専用受信アドレスを自動発行します。会員はGmail側で一度だけ転送設定を行い、その後は抽選案内・応募完了・当落・購入完了を本人のデータへ自動反映します。</p>
+          <div class="field-grid" style="margin-top:10px">
+            <label class="field full"><span>受信用ドメイン（公開情報）</span><input class="control" id="mailDomainSetting" placeholder="例：mail.tom-lottery.jp"></label>
+          </div>
+          <button class="soft-btn" id="saveMailDomainBtn" style="width:100%;margin-top:8px">受信用ドメインを保存</button>
+          <div class="notice" style="margin-top:9px">service_role key はブラウザに保存しません。Cloudflare WorkerのSecretだけに保存します。運営画面から他会員のメール本文・専用アドレス・当落履歴は閲覧できません。</div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h3>接続設定</h3><p>Supabase Project URL / Publishable key</p></div></div>
+          <button class="soft-btn" id="openConfigFromTools" style="width:100%;margin-top:8px">接続設定を開く</button>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="mailSetupBackdrop" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head"><h3>📩 Gmailメール連携</h3><button class="modal-close" id="closeMailSetupBtn">×</button></div>
+      <div class="notice">初回だけの設定です。設定後は対象メールが届くたびに抽選管理へ自動反映されます。</div>
+      <div class="step-list">
+        <div class="step-item">下の「専用転送アドレス」をコピーします。<div class="copy-code" id="mailSetupAddress" style="margin-top:7px"></div><button class="soft-btn" id="copyMailAddressModalBtn" style="width:100%;margin-top:7px">アドレスをコピー</button></div>
+        <div class="step-item">Gmail → 設定 →「メール転送とPOP/IMAP」→「転送先アドレスを追加」に専用アドレスを貼り付けます。</div>
+        <div class="step-item">Gmailから確認メールが届くと、この画面に確認コード/確認リンクが自動表示されます。表示後にGmail側で確認を完了します。<div id="mailSetupVerification" class="mail-verify-box" style="margin-top:7px">確認メール待ち</div></div>
+        <div class="step-item">対象ショップだけを自動転送するフィルターを作ります。最初はJoshin・ポケモンセンター・LivePocket・タカラトミーを対象にします。<div class="copy-code" id="mailFilterQuery" style="margin-top:7px"></div><button class="soft-btn" id="copyMailFilterBtn" style="width:100%;margin-top:7px">フィルター条件をコピー</button></div>
+      </div>
+      <button class="primary-btn" id="refreshMailModalBtn" style="width:100%;margin-top:12px">受信状態を更新</button>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="editBackdrop" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h3>抽選情報を編集（運営共通）</h3>
+        <button class="modal-close" id="closeEditBtn">×</button>
+      </div>
+      <div class="field-grid">
+        <label class="field"><span>店舗名</span><input class="control" id="eStore"></label>
+        <label class="field"><span>カテゴリ（複数可）</span>
+          <div class="category-multi" id="eCategorySelector"></div>
+        </label>
+        <label class="field full"><span>タイトル</span><input class="control" id="eTitle"></label>
+        <label class="field"><span>受付開始日</span><div class="date-wrap"><input id="eStart" type="date"></div></label>
+        <label class="field"><span>締切日</span><div class="date-wrap"><input id="eDeadline" type="date"></div></label>
+        <label class="field"><span>締切時刻</span><input class="control" id="eDeadlineTime" type="time"></label>
+        <label class="field"><span>受取方法</span>
+          <select class="control" id="ePickup"><option>店舗受取</option><option>全国配送</option><option>配送</option><option>未確認</option></select>
+        </label>
+        <label class="field"><span>応募方法</span>
+          <select class="control" id="eApplyMethod"><option>Web</option><option>アプリ</option><option>店頭</option><option>その他</option><option>未確認</option></select>
+        </label>
+        <label class="field"><span>会員登録</span>
+          <select class="control" id="eMembership"><option value="required">必要</option><option value="not_required">不要 / 記載なし</option></select>
+        </label>
+        <label class="field full"><span>会員条件表示</span><input class="control" id="eMembershipLabel" placeholder="例：アプリ会員限定"></label>
+        <label class="field full"><span>応募条件</span><input class="control" id="eExtraRequirement" placeholder="例：プレイヤーID必須"></label>
+        <label class="field full"><span>メモ</span><textarea class="control" id="eNote" style="min-height:80px"></textarea></label>
+        <div class="field full"><span>リンク</span><div class="link-editor" id="eLinks"></div><button class="soft-btn" id="editAddLinkBtn" style="margin-top:7px">＋リンク追加</button></div>
+      </div>
+      <button class="primary-btn" id="saveEditBtn" style="width:100%;margin-top:12px">変更を全会員へ反映</button>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="configBackdrop" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head"><h3>Supabase接続設定</h3><button class="modal-close" id="closeConfigBtn">×</button></div>
+      <div class="field-grid">
+        <label class="field full"><span>Project URL</span><input class="control" id="configUrl" placeholder="https://xxxxx.supabase.co"></label>
+        <label class="field full"><span>Publishable / anon key</span><input class="control" id="configKey" placeholder="公開用キー"></label>
+      </div>
+      <p class="helper">ブラウザ側には公開用キーのみ設定します。service_role key は絶対に使用しません。</p>
+      <div class="auth-row" style="margin-top:10px">
+        <button class="primary-btn" id="saveConfigBtn">保存して再読込</button>
+        <button class="danger-btn" id="clearConfigBtn">設定を削除</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const CONFIG_KEY='tom_lottery_supabase_config_v2';
+    const DEMO_GLOBAL_KEY='tom_lottery_v2_global';
+    const DEMO_PROGRESS_KEY='tom_lottery_v2_progress_member';
+    const DEMO_CATALOG_KEY='tom_lottery_v2_catalog';
+    const DEMO_PROFILES_KEY='tom_lottery_v2_profiles';
+    const V1_KEY='tom_lottery_manager_v1';
+    const STATUS_FLOW=['未応募','結果待ち','当選','購入済み','完了'];
+    const STATUS_OPTIONS=['未応募','結果待ち','当選','購入済み','完了','落選'];
+    const TERMINAL_STATUSES=['完了','落選'];
+    const $=id=>document.getElementById(id);
+
+    let mode='none';
+    let supabase=null;
+    let session=null;
+    let profile=null;
+    let roleView='member';
+    let adminSection='lotteries';
+    let activeCategory='all';
+    let openId=null;
+    let archiveOpen=false;
+    let editingId=null;
+    let previewLinks=[];
+    let editLinks=[];
+    let lotteries=[];
+    let progressMap=new Map();
+    let catalog=[];
+    let profiles=[];
+    let realtimeChannel=null;
+    let mailboxAlias=null;
+    let mailEvents=[];
+    let publicSettings={mail_domain:''};
+
+    const BUILTIN_CATALOG=[
+      {category:'pokemon',name:'メガブレイブ',release_date:'2025-08-01',aliases:['メガブレイブ']},
+      {category:'pokemon',name:'メガシンフォニア',release_date:'2025-08-01',aliases:['メガシンフォニア']},
+      {category:'pokemon',name:'プレミアムトレーナーボックス MEGA',release_date:'2025-08-01',aliases:['プレミアムトレーナーボックス MEGA','プレミアムトレーナーボックスMEGA']},
+      {category:'pokemon',name:'インフェルノX',release_date:'2025-09-26',aliases:['インフェルノX','インフェルノエックス']},
+      {category:'pokemon',name:'MEGAドリームex',release_date:'2025-11-28',aliases:['MEGAドリームex','MEGAドリームEX','メガドリームex']},
+      {category:'pokemon',name:'ムニキスゼロ',release_date:'2026-01-23',aliases:['ムニキスゼロ']},
+      {category:'pokemon',name:'ニンジャスピナー',release_date:'2026-03-13',aliases:['ニンジャスピナー']},
+      {category:'pokemon',name:'アビスアイ',release_date:'2026-05-22',aliases:['アビスアイ']},
+      {category:'pokemon',name:'ストームエメラルダ',release_date:'2026-07-31',aliases:['ストームエメラルダ']},
+      {category:'pokemon',name:'30th CELEBRATION',release_date:'2026-09-16',aliases:['30th CELEBRATION','30TH CELEBRATION']},
+      {category:'pokemon',name:'30th CELEBRATION プレミアムデッキセット エーフィ・ブラッキー',release_date:'2026-09-16',aliases:['プレミアムデッキセット エーフィ・ブラッキー','プレミアムデッキセットエーフィ・ブラッキー']},
+      {category:'pokemon',name:'30th CELEBRATION FUTURISTIC BOX',release_date:'2026-09-16',aliases:['30th CELEBRATION FUTURISTIC BOX','FUTURISTIC BOX']},
+      {category:'pokemon',name:'30th CELEBRATION カードセット',release_date:'2026-10-16',aliases:['30th CELEBRATION カードセット','30th CELEBRATIONカードセット']},
+      {category:'onepiece',name:'受け継がれる意志',release_date:'2025-08-23',aliases:['受け継がれる意志','OP-13','OP13']},
+      {category:'onepiece',name:'ONE PIECE Heroines Edition',release_date:'2025-10-25',aliases:['ONE PIECE Heroines Edition','HEROINES EDITION','EB-03','EB03']},
+      {category:'onepiece',name:'蒼海の七傑',release_date:'2025-11-22',aliases:['蒼海の七傑','OP-14','OP14']},
+      {category:'onepiece',name:'EGGHEAD CRISIS',release_date:'2026-01-31',aliases:['EGGHEAD CRISIS','エッグヘッドクライシス','EB-04','EB04']},
+      {category:'onepiece',name:'神の島の冒険',release_date:'2026-02-28',aliases:['神の島の冒険','OP-15','OP15']},
+      {category:'onepiece',name:'決戦の刻',release_date:'2026-05-30',aliases:['決戦の刻','OP-16','OP16']},
+      {category:'onepiece',name:'世界最強の戦士',release_date:'2026-08-22',aliases:['世界最強の戦士','OP-17','OP17']},
+      {category:'onepiece',name:'ONE PIECE Heroines Edition vol.2',release_date:'2026-10-01',aliases:['ONE PIECE Heroines Edition vol.2','HEROINES EDITION VOL.2','Heroines Edition vol.2','EB-05','EB05']},
+      {category:'dragonball',name:'DRAGON BALL SUPER DIVERS',release_date:null,aliases:['DRAGON BALL SUPER DIVERS','ドラゴンボールスーパーダイバーズ','スーパーダイバーズ']},
+      {category:'other',name:'BEYBLADE X',release_date:null,aliases:['BEYBLADE X','ベイブレードX','ベイブレード X']}
+    ];
+
+    const DEMO_LOTTERIES=[
+      {id:rid(),store:'三洋堂',category:'pokemon',categories:['pokemon'],title:'30th CELEBRATION / プレミアムデッキセット エーフィ・ブラッキー',start_date:'2026-08-19',deadline_date:'2026-09-01',deadline_time:null,fulfillment:'店舗受取',application_method:'Web',membership_required:true,membership_label:'会員登録が必要',extra_requirement:'',note:'三洋堂のトレカ取扱店舗で受け取り',is_active:true,created_at:new Date().toISOString(),links:[
+        {label:'トレカ取扱店舗',url:'https://x.gd/UejXq',type:'store',sort_order:1},
+        {label:'会員登録',url:'https://x.gd/ItBTK',type:'member',sort_order:2},
+        {label:'30th CELEBRATION 応募',url:'https://x.gd/6AFC9',type:'entry',sort_order:3},
+        {label:'プレミアムデッキセット 応募',url:'https://x.gd/c7I0o',type:'entry',sort_order:4}
+      ]},
+      {id:rid(),store:'ヤマシロヤ',category:'onepiece',categories:['onepiece'],title:'決戦の刻 / 神の島の冒険',start_date:'2026-08-19',deadline_date:'2026-08-21',deadline_time:'21:30',fulfillment:'全国配送',application_method:'Web',membership_required:true,membership_label:'会員登録が必要',extra_requirement:'',note:'全国配送',is_active:true,created_at:new Date().toISOString(),links:[
+        {label:'会員登録',url:'https://x.gd/MQSrs',type:'member',sort_order:1},
+        {label:'応募フォーム',url:'https://x.gd/HlTNC',type:'entry',sort_order:2}
+      ]}
+    ];
+
+    function rid(){return (crypto.randomUUID?.()||'id-'+Date.now()+'-'+Math.random().toString(16).slice(2))}
+    function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+    function todayJST(){
+      const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+      const o={};parts.forEach(p=>o[p.type]=p.value);return `${o.year}-${o.month}-${o.day}`;
+    }
+    function dateObj(s){if(!s)return null;return new Date(`${s}T00:00:00+09:00`)}
+    function dayDiff(s){const t=dateObj(todayJST()),d=dateObj(s);return t&&d?Math.round((d-t)/86400000):99999}
+    function fmtDate(s){if(!s)return '-';const [y,m,d]=s.split('-');return `${Number(m)}/${Number(d)}`}
+    function weekdayInfo(s){if(!s)return{label:'',cls:''};const d=dateObj(s);if(!d)return{label:'',cls:''};const labels=['日','月','火','水','木','金','土'];const n=d.getDay();return{label:labels[n],cls:n===0?'sun':n===6?'sat':''}}
+    function brandLabel(cat){return cat==='pokemon'?'POKÉMON':cat==='onepiece'?'ONE PIECE':cat==='dragonball'?'DRAGON BALL':'OTHER / TOY'}
+    function fulfillmentLabel(item){if((item.fulfillment||'')==='配送'&&/全国配送/.test(item.note||''))return '全国配送';return item.fulfillment||'未確認'}
+    function cleanDisplayNote(note){return String(note||'').split(' / ').filter(x=>x&&!/^商品DB認識[:：]/.test(x.trim())).join(' / ')}
+    function categoryVar(cat){return cat==='pokemon'?'var(--pokemon)':cat==='onepiece'?'var(--onepiece)':cat==='dragonball'?'var(--dragonball)':'var(--other)'}
+    function itemCategories(item){
+      const arr=Array.isArray(item?.categories)&&item.categories.length?item.categories:[item?.category||'other'];
+      return [...new Set(arr.filter(Boolean))];
+    }
+    function primaryCategory(item){return itemCategories(item)[0]||'other'}
+    function hasCategory(item,cat){return itemCategories(item).includes(cat)}
+    function renderCategorySelector(rootId,selected=[]){
+      const root=$(rootId); if(!root) return;
+      const active=[...new Set((selected&&selected.length?selected:['other']).filter(Boolean))];
+      root.innerHTML=['pokemon','onepiece','dragonball','other'].map(cat=>`<button type="button" class="category-choice ${active.includes(cat)?'active':''}" data-choice-root="${rootId}" data-value="${cat}">${brandLabel(cat)}</button>`).join('');
+      root.querySelectorAll('[data-choice-root]').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          btn.classList.toggle('active');
+          if(!root.querySelector('.category-choice.active')) btn.classList.add('active');
+        });
+      });
+    }
+    function getCategorySelection(rootId){
+      const root=$(rootId); if(!root) return ['other'];
+      const vals=[...root.querySelectorAll('.category-choice.active')].map(x=>x.dataset.value).filter(Boolean);
+      return vals.length?vals:['other'];
+    }
+    function normalizeStatus(s){if(s==='受取済み')return '完了';return s||'未応募'}
+    function statusProgress(s){return ({'未応募':0,'結果待ち':42,'当選':72,'購入済み':88,'完了':100,'落選':100})[normalizeStatus(s)]||0}
+    function getProgress(id){const raw=progressMap.get(id)||{status:'未応募',membership_done:false,memo:''};return {...raw,status:normalizeStatus(raw.status)}}
+    function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),1900)}
+    function currentIsAdmin(){return mode==='demo'?profile?.role==='admin':profile?.role==='admin'}
+    function currentIsActive(){return mode==='demo'?true:profile?.membership_status==='active'||profile?.role==='admin'}
+    function cleanTime(t){return t?String(t).slice(0,5):''}
+
+    function loadConfig(){try{return JSON.parse(localStorage.getItem(CONFIG_KEY)||'null')}catch{return null}}
+    function saveConfig(url,key){localStorage.setItem(CONFIG_KEY,JSON.stringify({url:url.trim().replace(/\/$/,''),key:key.trim()}))}
+    function showAuth(modeName='choice'){
+      $('authShell').classList.remove('hidden');$('app').classList.add('hidden');
+      $('modeChoice').classList.toggle('hidden',modeName!=='choice');
+      $('loginBox').classList.toggle('hidden',modeName!=='login');
+    }
+    function showApp(){
+      $('authShell').classList.add('hidden');$('app').classList.remove('hidden');
+      $('modeBadge').textContent=mode==='cloud'?'CLOUD':'DEMO';
+      $('modeBadge').className='badge '+(mode==='cloud'?'cloud':'demo');
+      $('accountBadge').textContent=profile?.email||profile?.display_name||'demo';
+      $('adminTabBtn').classList.toggle('hidden',!currentIsAdmin());
+      if(!currentIsAdmin()&&roleView==='admin')roleView='member';
+      renderAll();
+    }
+
+    async function init(){
+      const cfg=loadConfig();
+      if(!cfg){showAuth('choice');return}
+      try{
+        const { createClient } = await import('./vendor/supabase-v2.112.3.mjs');
+        supabase=createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+        mode='cloud';
+        const {data:{session:s}}=await supabase.auth.getSession();
+        if(!s){
+          $('connectionNotice').textContent='Supabase接続設定済み。メールアドレスとパスワードでログインしてください。';
+          showAuth('login');return;
+        }
+        session=s;
+        await loadCloudProfile();
+        await loadAllData();
+        setupRealtime();
+        showApp();
+      }catch(e){
+        console.error(e);
+        $('connectionNotice').textContent='接続設定を確認してください。';
+        showAuth('login');
+      }
+    }
+
+    function initDemo(){
+      mode='demo';
+      session={user:{id:'demo-member',email:'member@demo.local'}};
+      const role=localStorage.getItem('tom_lottery_v2_demo_role')||'admin';
+      profile={id:'demo-member',email:role==='admin'?'admin@demo.local':'member@demo.local',role,membership_status:'active',display_name:role==='admin'?'運営デモ':'会員デモ',mail_connection_status:'connected',mail_last_received_at:new Date().toISOString()};
+      migrateV1ToDemoIfNeeded();
+      loadDemoData();
+      showApp();
+    }
+
+    function migrateV1ToDemoIfNeeded(){
+      if(localStorage.getItem(DEMO_GLOBAL_KEY))return;
+      let migrated=[];
+      let progress={};
+      try{
+        const old=JSON.parse(localStorage.getItem(V1_KEY)||'[]');
+        if(Array.isArray(old)&&old.length){
+          migrated=old.map(x=>({
+            id:x.id||rid(),store:x.store||'店舗未設定',category:x.category||'other',title:x.title||'抽選商品',
+            start_date:x.start||x.start_date||null,deadline_date:x.deadline||x.deadline_date||todayJST(),
+            deadline_time:x.deadlineTime||x.deadline_time||null,fulfillment:x.pickup||x.fulfillment||'未確認',
+            application_method:x.application_method||'Web',membership_required:(x.membership==='required'||x.membership_required===true),
+            membership_label:x.membership_label||'',extra_requirement:x.extra_requirement||'',note:x.note||'',is_active:true,
+            created_at:new Date(x.createdAt||Date.now()).toISOString(),
+            links:(x.links||[]).map((l,i)=>({label:l.label||'リンク',url:l.url||'',type:l.type||'detail',sort_order:i+1}))
+          }));
+          old.forEach(x=>{progress[x.id]={status:x.status||'未応募',membership_done:!!x.membershipDone,memo:''}});
+        }
+      }catch{}
+      if(!migrated.length)migrated=DEMO_LOTTERIES;
+      localStorage.setItem(DEMO_GLOBAL_KEY,JSON.stringify(migrated));
+      localStorage.setItem(DEMO_PROGRESS_KEY,JSON.stringify(progress));
+      if(!localStorage.getItem(DEMO_CATALOG_KEY))localStorage.setItem(DEMO_CATALOG_KEY,JSON.stringify(BUILTIN_CATALOG));
+      if(!localStorage.getItem(DEMO_PROFILES_KEY)){
+        localStorage.setItem(DEMO_PROFILES_KEY,JSON.stringify([
+          {id:'demo-admin',email:'admin@demo.local',display_name:'運営デモ',role:'admin',membership_status:'active'},
+          {id:'demo-member',email:'member@demo.local',display_name:'会員デモ',role:'member',membership_status:'active'}
+        ]));
+      }
+    }
+    function loadDemoData(){
+      lotteries=JSON.parse(localStorage.getItem(DEMO_GLOBAL_KEY)||'[]');
+      const p=JSON.parse(localStorage.getItem(DEMO_PROGRESS_KEY)||'{}');
+      progressMap=new Map(Object.entries(p));
+      catalog=JSON.parse(localStorage.getItem(DEMO_CATALOG_KEY)||'[]');
+      profiles=JSON.parse(localStorage.getItem(DEMO_PROFILES_KEY)||'[]');
+      publicSettings={mail_domain:'mail.demo.tom-lottery.jp'};
+      mailboxAlias={id:'demo-mailbox',user_id:'demo-member',alias_token:'a8f3c21d9b77',connection_status:'connected',verification_code:null,verification_url:null,last_received_at:new Date().toISOString(),is_enabled:true};
+      mailEvents=[
+        {id:'mail-demo-1',event_type:'result_win',subject:'抽選結果のお知らせ',store:'ポケモンセンターオンライン',title:'30th CELEBRATION',received_at:new Date().toISOString(),needs_review:false},
+        {id:'mail-demo-2',event_type:'application_complete',subject:'応募完了のお知らせ',store:'ポケモンセンターオンライン',title:'30th CELEBRATION',received_at:new Date(Date.now()-3600000).toISOString(),needs_review:false}
+      ];
+      renderAll();
+    }
+    function persistDemo(){
+      localStorage.setItem(DEMO_GLOBAL_KEY,JSON.stringify(lotteries));
+      localStorage.setItem(DEMO_PROGRESS_KEY,JSON.stringify(Object.fromEntries(progressMap)));
+      localStorage.setItem(DEMO_CATALOG_KEY,JSON.stringify(catalog));
+      localStorage.setItem(DEMO_PROFILES_KEY,JSON.stringify(profiles));
+    }
+
+    async function loadCloudProfile(){
+      const uid=session?.user?.id;if(!uid)return;
+      const {data,error}=await supabase.from('profiles').select('*').eq('id',uid).single();
+      if(error)throw error;
+      profile=data;
+    }
+    async function loadAllData(){
+      if(mode==='demo'){loadDemoData();return}
+      if(!profile){return}
+
+      const [settingsRes,mailboxRes,eventRes]=await Promise.all([
+        supabase.from('public_settings').select('key,value'),
+        supabase.from('mailbox_aliases').select('*').eq('user_id',session.user.id).maybeSingle(),
+        supabase.from('mail_events').select('id,event_type,from_address,subject,store,title,confidence,needs_review,received_at,lottery_id').eq('user_id',session.user.id).order('received_at',{ascending:false}).limit(8)
+      ]);
+      publicSettings=Object.fromEntries((settingsRes.data||[]).map(x=>[x.key,x.value]));
+      mailboxAlias=mailboxRes.data||null;
+      if(!mailboxAlias&&!mailboxRes.error){
+        await supabase.rpc('ensure_my_mailbox');
+        const retry=await supabase.from('mailbox_aliases').select('*').eq('user_id',session.user.id).maybeSingle();
+        mailboxAlias=retry.data||null;
+      }
+      mailEvents=eventRes.data||[];
+
+      if(currentIsActive()){
+        const [lRes,pRes,cRes]=await Promise.all([
+          supabase.from('lotteries').select('*, lottery_links(*)').eq('is_active',true).order('deadline_date',{ascending:true}),
+          supabase.from('user_lottery_progress').select('*').eq('user_id',session.user.id),
+          supabase.from('product_catalog').select('*').eq('is_active',true).order('release_date',{ascending:false})
+        ]);
+        if(lRes.error)throw lRes.error;
+        if(pRes.error)throw pRes.error;
+        lotteries=(lRes.data||[]).map(normalizeCloudLottery);
+        progressMap=new Map((pRes.data||[]).map(p=>[p.lottery_id,{status:p.status,membership_done:p.membership_done,memo:p.memo||''}]));
+        catalog=(cRes.data||[]).map(c=>({...c,aliases:Array.isArray(c.aliases)?c.aliases:[]}));
+      }else{
+        lotteries=[];progressMap=new Map();catalog=BUILTIN_CATALOG.slice();
+      }
+      if(currentIsAdmin())await loadProfiles();
+      renderAll();
+    }
+    function normalizeCloudLottery(x){
+      return {
+        id:x.id,owner_user_id:x.owner_user_id||null,store:x.store,category:x.category,title:x.title,start_date:x.start_date,deadline_date:x.deadline_date,
+        deadline_time:cleanTime(x.deadline_time),fulfillment:x.fulfillment,application_method:x.application_method||'未確認',
+        membership_required:x.membership_required,membership_label:x.membership_label||'',extra_requirement:x.extra_requirement||'',
+        note:x.note||'',is_active:x.is_active,created_at:x.created_at,
+        source_type:x.source_type||'manual',source_message_id:x.source_message_id||null,source_entry_key:x.source_entry_key||null,source_received_at:x.source_received_at||null,
+        source_subject:x.source_subject||'',needs_review:!!x.needs_review,
+        categories:Array.isArray(x.categories)&&x.categories.length?x.categories:[x.category||'other'],
+        links:(x.lottery_links||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)).map(l=>({id:l.id,label:l.label,url:l.url,type:l.type,sort_order:l.sort_order||0}))
+      };
+    }
+    async function loadProfiles(){
+      if(mode==='demo')return;
+      const {data,error}=await supabase.from('profiles').select('*').order('created_at',{ascending:false});
+      if(error){console.warn(error);profiles=[];return}
+      profiles=data||[];
+    }
+    function setupRealtime(){
+      if(mode!=='cloud')return;
+      if(realtimeChannel)supabase.removeChannel(realtimeChannel);
+      realtimeChannel=supabase.channel('tom-lottery-live')
+        .on('postgres_changes',{event:'*',schema:'public',table:'lotteries'},payload=>{
+          if(payload?.eventType==='INSERT'&&['gmail','email'].includes(payload?.new?.source_type))toast('📩 新しい抽選メールを自動取得しました');
+          loadAllData();
+        })
+        .on('postgres_changes',{event:'*',schema:'public',table:'lottery_links'},()=>loadAllData())
+        .on('postgres_changes',{event:'*',schema:'public',table:'product_catalog'},()=>loadAllData())
+        .on('postgres_changes',{event:'*',schema:'public',table:'user_lottery_progress'},payload=>{
+          if(payload?.new?.user_id===session?.user?.id)toast('📩 ステータスを自動更新しました');
+          loadAllData();
+        })
+        .on('postgres_changes',{event:'*',schema:'public',table:'mailbox_aliases'},()=>loadAllData())
+        .on('postgres_changes',{event:'INSERT',schema:'public',table:'mail_events'},()=>loadAllData())
+        .subscribe();
+    }
+
+    function renderAll(){
+      if(!$('app')||$('app').classList.contains('hidden'))return;
+      $('inactiveNotice').classList.toggle('hidden',currentIsActive());
+      renderRoleTabs();
+      renderMailConnection();
+      renderMember();
+      if(currentIsAdmin())renderAdmin();
+    }
+    function renderRoleTabs(){
+      $('memberTabBtn').classList.toggle('active',roleView==='member');
+      $('adminTabBtn').classList.toggle('active',roleView==='admin');
+      $('memberView').classList.toggle('hidden',roleView!=='member');
+      $('adminView').classList.toggle('hidden',roleView!=='admin');
+    }
+    function mailForwardAddress(){
+      const domain=String(publicSettings.mail_domain||'').trim().replace(/^@/,'');
+      return mailboxAlias?.alias_token&&domain?`${mailboxAlias.alias_token}@${domain}`:'';
+    }
+    function mailStatusLabel(){
+      if(!publicSettings.mail_domain)return{label:'運営設定待ち',cls:'off'};
+      const st=mailboxAlias?.connection_status||'unconfigured';
+      if(st==='connected')return{label:'🟢 連携済み',cls:'connected'};
+      if(st==='verification_received')return{label:'🟡 確認待ち',cls:'pending'};
+      if(st==='error')return{label:'エラー',cls:'pending'};
+      return{label:'未設定',cls:'off'};
+    }
+    function mailEventLabel(type){return ({forward_verification:'転送確認',lottery_notice:'抽選案内',application_complete:'応募完了',result_win:'当選',result_lose:'落選',purchase_complete:'購入完了',shipping:'発送',other:'その他'})[type]||type}
+    function mailEventIcon(type){return ({forward_verification:'🔑',lottery_notice:'📢',application_complete:'✅',result_win:'🎉',result_lose:'↘',purchase_complete:'🛒',shipping:'📦',other:'✉️'})[type]||'✉️'}
+    function fmtMailTime(v){if(!v)return'';try{return new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(v))}catch{return''}}
+    function renderVerificationBox(targetId){
+      const el=$(targetId);if(!el)return;
+      if(mailboxAlias?.verification_code||mailboxAlias?.verification_url){
+        el.innerHTML=`<div class="status-control-label">Gmail転送確認が届きました</div>${mailboxAlias.verification_code?`<div class="mail-verify-code">${esc(mailboxAlias.verification_code)}</div>`:''}${mailboxAlias.verification_url?`<a class="action-link entry" href="${esc(mailboxAlias.verification_url)}" target="_blank" rel="noopener noreferrer" style="margin-top:7px">確認リンクを開く</a>`:''}`;
+        el.classList.remove('hidden');
+      }else{
+        el.innerHTML='確認メール待ち';
+        if(targetId==='mailVerifyInline')el.classList.add('hidden');
+      }
+    }
+    function renderMailConnection(){
+      if(!$('mailConnectCard'))return;
+      const st=mailStatusLabel();$('mailConnectStatus').textContent=st.label;$('mailConnectStatus').className='mail-status '+st.cls;
+      const addr=mailForwardAddress();$('mailForwardAddress').textContent=addr||'受信用ドメインがまだ設定されていません';
+      $('copyMailAddressBtn').disabled=!addr;$('openMailSetupBtn').disabled=!addr;
+      $('mailLastReceived').textContent=mailboxAlias?.last_received_at?`最終受信：${fmtMailTime(mailboxAlias.last_received_at)}`:(addr?'まだ対象メールを受信していません':'');
+      renderVerificationBox('mailVerifyInline');
+      if(mailEvents.length){
+        $('mailRecentWrap').classList.remove('hidden');
+        $('mailEventList').innerHTML=mailEvents.slice(0,5).map(e=>`<div class="mail-event-row"><div class="mail-event-icon">${mailEventIcon(e.event_type)}</div><div class="mail-event-main"><div class="mail-event-title">${esc(mailEventLabel(e.event_type))}｜${esc(e.store||e.title||e.subject||'メール')}</div><div class="mail-event-meta">${esc(e.title||e.subject||'')}</div></div><div class="mail-event-time">${esc(fmtMailTime(e.received_at))}</div></div>`).join('');
+      }else{$('mailRecentWrap').classList.add('hidden');$('mailEventList').innerHTML=''}
+      if($('mailDomainSetting'))$('mailDomainSetting').value=publicSettings.mail_domain||'';
+    }
+    function openMailSetup(){
+      const addr=mailForwardAddress();if(!addr){toast('受信用ドメインの設定待ちです');return}
+      $('mailSetupAddress').textContent=addr;
+      $('mailFilterQuery').textContent='from:(joshin.co.jp OR pokemoncenter-online.com OR livepocket.jp OR takaratomymall.jp OR takaratomyfans.com)';
+      renderVerificationBox('mailSetupVerification');
+      $('mailSetupBackdrop').classList.add('show');
+    }
+    async function copyText(text,msg='コピーしました'){
+      if(!text)return;try{await navigator.clipboard.writeText(text);toast(msg)}catch{toast('コピーできませんでした')}
+    }
+    async function refreshMailData(){if(mode==='cloud'){await loadCloudProfile();await loadAllData()}else renderMailConnection();toast('メール連携状態を更新しました')}
+    async function saveMailDomain(){
+      if(!currentIsAdmin()||mode!=='cloud'){toast('本番の運営アカウントで設定してください');return}
+      const domain=$('mailDomainSetting').value.trim().toLowerCase().replace(/^@/,'').replace(/^https?:\/\//,'').replace(/\/.*$/,'');
+      if(!domain||!domain.includes('.')){toast('受信用ドメインを入力してください');return}
+      const {error}=await supabase.from('public_settings').upsert({key:'mail_domain',value:domain,updated_at:new Date().toISOString()},{onConflict:'key'});
+      if(error){toast('保存できませんでした');console.error(error);return}
+      publicSettings.mail_domain=domain;renderMailConnection();toast('受信用ドメインを保存しました');
+    }
+
+    function renderMember(){
+      if(!currentIsActive()){
+        $('lotteryList').innerHTML='';
+        if($('archiveList'))$('archiveList').innerHTML='';
+        $('emptyState').hidden=false;
+        if($('archiveEmpty'))$('archiveEmpty').hidden=false;
+        updateArchiveUI(0);
+        updateSummary();
+        return;
+      }
+      const q=$('searchInput').value.trim().toLowerCase();
+      const status=$('statusFilter').value;
+      const sort=$('sortSelect').value;
+      const filtered=lotteries.filter(x=>{
+        const p=getProgress(x.id);
+        const hay=`${x.store} ${x.title}`.toLowerCase();
+        return (!q||hay.includes(q))&&(activeCategory==='all'||hasCategory(x,activeCategory))&&(status==='all'||p.status===status);
+      });
+      const sorter=(a,b)=>{
+        if(sort==='store')return (a.store||'').localeCompare(b.store||'','ja');
+        if(sort==='newest')return new Date(b.created_at||0)-new Date(a.created_at||0);
+        return (a.deadline_date||'9999').localeCompare(b.deadline_date||'9999');
+      };
+      const activeList=filtered.filter(x=>!TERMINAL_STATUSES.includes(getProgress(x.id).status)).sort(sorter);
+      const archivedList=filtered.filter(x=>TERMINAL_STATUSES.includes(getProgress(x.id).status)).sort(sorter);
+      $('lotteryList').innerHTML=activeList.map(x=>renderLotteryCard(x,false)).join('');
+      $('emptyState').hidden=!!activeList.length;
+      if($('archiveList'))$('archiveList').innerHTML=archivedList.map(x=>renderLotteryCard(x,false)).join('');
+      if($('archiveEmpty'))$('archiveEmpty').hidden=!!archivedList.length;
+      updateArchiveUI(archivedList.length);
+      bindLotteryEvents(false);
+      updateSummary();
+    }
+    function updateSummary(){
+      const ps=lotteries.map(x=>({x,p:getProgress(x.id)}));
+      $('countTotal').textContent=currentIsActive()?ps.filter(o=>!TERMINAL_STATUSES.includes(o.p.status)).length:0;
+      $('countUnapplied').textContent=ps.filter(o=>o.p.status==='未応募').length;
+      $('countToday').textContent=ps.filter(o=>o.p.status==='未応募'&&dayDiff(o.x.deadline_date)===0).length;
+      $('countSoon').textContent=ps.filter(o=>o.p.status==='未応募'&&dayDiff(o.x.deadline_date)>=0&&dayDiff(o.x.deadline_date)<=3).length;
+    }
+    function updateArchiveUI(count){
+      if(!$('archiveWrap'))return;
+      $('archiveCount').textContent=count;
+      $('archiveWrap').classList.toggle('open',archiveOpen);
+      $('archiveBody').style.display=archiveOpen?'block':'none';
+      $('archiveToggle').setAttribute('aria-expanded',archiveOpen?'true':'false');
+      $('archiveChevron').textContent=archiveOpen?'⌃':'⌄';
+    }
+
+    function renderLotteryCard(item,adminMode){
+      const p=getProgress(item.id);
+      const cats=itemCategories(item);
+      const primary=primaryCategory(item);
+      const left=dayDiff(item.deadline_date);
+      const deadlineState=(left===0?'today':left===1?'tomorrow':left>=2&&left<=3?'soon':'');
+      const time=item.deadline_time?cleanTime(item.deadline_time):'';
+      const weekday=weekdayInfo(item.deadline_date);
+      const isOpen=openId===item.id;
+      const membershipChip=item.membership_required?`<span class="small-chip ${p.membership_done?'ok':'warn'}">${p.membership_done?'会員条件確認済み':esc(item.membership_label||'会員登録必要')}</span>`:'';
+      const applyChip=item.application_method&&item.application_method!=='未確認'?`<span class="small-chip ok">${esc(item.application_method==='アプリ'?'アプリ応募':item.application_method+'応募')}</span>`:'';
+      const requirementChip=item.extra_requirement?`<span class="small-chip warn">${esc(item.extra_requirement)}</span>`:'';
+      const sourceChip=['gmail','email'].includes(item.source_type)?'<span class="small-chip mail">📩 メール取得</span>':'';
+      const personalChip=item.owner_user_id?'<span class="small-chip mail">🔒 個人</span>':'';
+      const reviewChip=item.source_type==='gmail'&&item.needs_review?'<span class="small-chip review">要確認</span>':'';
+      const displayNote=cleanDisplayNote(item.note);
+      const progress= statusProgress(p.status);
+      const labels=`<span class="brand-stack">${cats.map(cat=>`<span class="brand-label ${esc(cat)}">${brandLabel(cat)}</span>`).join('')}</span>`;
+      const multiClass=cats.length>1?`multi-${Math.min(cats.length,4)}`:'';
+      const styleVars=cats.slice(0,4).map((cat,i)=>`--multi${i+1}:${categoryVar(cat)};`).join('');
+      const links=(item.links||[]).map(l=>`<a class="action-link ${l.type==='entry'?'entry':''}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.label)}</a>`).join('');
+      const statusControls=adminMode?'':`
+        <div class="status-control-box">
+          <div class="status-control-label">あなたのステータス</div>
+          <select class="control" data-status-set="${esc(item.id)}">
+            ${STATUS_OPTIONS.map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+          <div class="status-buttons">
+            <button class="soft-btn" data-status-back="${esc(item.id)}" ${STATUS_FLOW.indexOf(p.status)<=0?'disabled':''}>← 戻す</button>
+            <button class="primary-btn" data-status-next="${esc(item.id)}" ${STATUS_FLOW.indexOf(p.status)===-1||p.status===STATUS_FLOW.at(-1)?'disabled':''}>${p.status==='未応募'?'応募完了 →':p.status==='当選'?'完了にする →':'進める →'}</button>
+          </div>
+          ${item.membership_required?`<button class="soft-btn" data-member-toggle="${esc(item.id)}" style="width:100%;margin-top:8px">${p.membership_done?'会員条件を未確認へ戻す':'会員条件確認済みにする'}</button>`:''}
+          <div class="personal-note">
+            <div class="status-control-label">自分用メモ</div>
+            <textarea class="control" data-personal-note="${esc(item.id)}" placeholder="当選店舗、受取予定など">${esc(p.memo||'')}</textarea>
+            <button class="soft-btn" data-save-note="${esc(item.id)}" style="width:100%;margin-top:6px">メモを保存</button>
+          </div>
+        </div>`;
+      const adminControls=adminMode?`
+        <div class="admin-actions">
+          <button class="soft-btn" data-admin-edit="${esc(item.id)}">編集</button>
+          <button class="danger-btn" data-admin-delete="${esc(item.id)}">削除</button>
+        </div>`:'';
+      return `
+        <article class="lottery-row ${esc(primary)} ${multiClass} ${isOpen?'open':''}" style="${styleVars}">
+          <button class="row-summary" data-open="${esc(item.id)}" aria-expanded="${isOpen}">
+            <div class="row-main">
+              <div class="meta-line">
+                ${labels}
+                ${!adminMode&&p.status==='未応募'?'<span class="unapplied-badge" title="未応募">未</span>':''}
+              </div>
+              <div class="store-line"><span class="store-name">${esc(item.store)}</span></div>
+              <div class="item-title">${esc(item.title)}</div>
+            </div>
+            <div class="deadline-wrap">
+              <div class="deadline-box ${deadlineState}">
+                <div class="deadline-label">締切</div>
+                <div class="deadline-date-row"><div class="deadline-date">${fmtDate(item.deadline_date)}</div>${weekday.label?`<span class="weekday-badge ${weekday.cls}">${weekday.label}</span>`:''}</div>
+                ${time?`<div class="deadline-time">${esc(time)}</div>`:''}
+                <div class="deadline-left">${left<0?'終了':left===0?'本日':`あと${left}日`}</div>
+              </div>
+              <span class="chevron">⌄</span>
+            </div>
+          </button>
+          <div class="details">
+            <div class="chip-row">
+              <span class="small-chip">${esc(fulfillmentLabel(item))}</span>
+              ${applyChip}
+              ${membershipChip}
+              ${requirementChip}
+              ${sourceChip}
+              ${personalChip}
+              ${reviewChip}
+              ${!adminMode&&p.status!=='未応募'?`<span class="small-chip">${esc(p.status)}</span>`:''}
+            </div>
+            ${!adminMode?`
+              <div class="progress-box">
+                <div class="progress-head"><span>進捗</span><span>${progress}%</span></div>
+                <div class="progress-track"><div class="progress-bar" style="width:${progress}%"></div></div>
+              </div>`:''}
+            <div class="info-grid">
+              <div class="info-box"><div class="info-label">受付開始</div><div class="info-value">${esc(fmtDate(item.start_date))}</div></div>
+              <div class="info-box"><div class="info-label">応募締切</div><div class="info-value">${esc(fmtDate(item.deadline_date))}${time?' '+esc(time):''}</div></div>
+            </div>
+            ${displayNote?`<div class="notice" style="margin-top:9px">${esc(displayNote)}</div>`:''}
+            ${links?`<div class="link-grid">${links}</div>`:''}
+            ${statusControls}
+            ${adminControls}
+          </div>
+        </article>`;
+    }
+
+    function bindLotteryEvents(adminMode){
+      document.querySelectorAll(adminMode?'#adminLotteryList [data-open]':'#lotteryList [data-open], #archiveList [data-open]').forEach(btn=>{
+        btn.addEventListener('click',()=>{openId=openId===btn.dataset.open?null:btn.dataset.open;adminMode?renderAdminLotteries():renderMember()});
+      });
+      if(adminMode){
+        document.querySelectorAll('[data-admin-edit]').forEach(b=>b.addEventListener('click',()=>openEdit(b.dataset.adminEdit)));
+        document.querySelectorAll('[data-admin-delete]').forEach(b=>b.addEventListener('click',()=>deleteLottery(b.dataset.adminDelete)));
+        return;
+      }
+      document.querySelectorAll('[data-status-set]').forEach(s=>s.addEventListener('change',()=>saveProgressStatus(s.dataset.statusSet,s.value)));
+      document.querySelectorAll('[data-status-back]').forEach(b=>b.addEventListener('click',()=>{
+        const p=getProgress(b.dataset.statusBack);const i=STATUS_FLOW.indexOf(p.status);if(i>0)saveProgressStatus(b.dataset.statusBack,STATUS_FLOW[i-1]);
+      }));
+      document.querySelectorAll('[data-status-next]').forEach(b=>b.addEventListener('click',()=>{
+        const p=getProgress(b.dataset.statusNext);const i=STATUS_FLOW.indexOf(p.status);if(i<STATUS_FLOW.length-1)saveProgressStatus(b.dataset.statusNext,STATUS_FLOW[i+1]);
+      }));
+      document.querySelectorAll('[data-member-toggle]').forEach(b=>b.addEventListener('click',()=>{
+        const p=getProgress(b.dataset.memberToggle);saveProgressPatch(b.dataset.memberToggle,{membership_done:!p.membership_done});
+      }));
+      document.querySelectorAll('[data-save-note]').forEach(b=>b.addEventListener('click',()=>{
+        const t=document.querySelector(`[data-personal-note="${CSS.escape(b.dataset.saveNote)}"]`);
+        saveProgressPatch(b.dataset.saveNote,{memo:t?.value||''});
+      }));
+      const archiveToggleEl=$('archiveToggle');
+      if(archiveToggleEl){archiveToggleEl.onclick=()=>{archiveOpen=!archiveOpen;updateArchiveUI(Number(($('archiveCount')?.textContent)||0))};}
+    }
+
+    async function saveProgressStatus(lotteryId,status){await saveProgressPatch(lotteryId,{status:normalizeStatus(status)})}
+    async function saveProgressPatch(lotteryId,patch){
+      const cur=getProgress(lotteryId);const next={...cur,...patch};progressMap.set(lotteryId,next);
+      if(mode==='demo'){persistDemo();renderMember();toast('個人ステータスを保存しました');return}
+      const payload={user_id:session.user.id,lottery_id:lotteryId,status:next.status,membership_done:!!next.membership_done,memo:next.memo||'',updated_at:new Date().toISOString()};
+      const {error}=await supabase.from('user_lottery_progress').upsert(payload,{onConflict:'user_id,lottery_id'});
+      if(error){toast('保存に失敗しました');console.error(error);return}
+      renderMember();toast('個人ステータスを保存しました');
+    }
+
+    function renderAdmin(){
+      document.querySelectorAll('[data-admin-section]').forEach(b=>b.classList.toggle('active',b.dataset.adminSection===adminSection));
+      $('adminLotteries').classList.toggle('hidden',adminSection!=='lotteries');
+      $('adminMembers').classList.toggle('hidden',adminSection!=='members');
+      $('adminCatalog').classList.toggle('hidden',adminSection!=='catalog');
+      $('adminTools').classList.toggle('hidden',adminSection!=='tools');
+      if(adminSection==='lotteries')renderAdminLotteries();
+      if(adminSection==='members')renderMembers();
+      if(adminSection==='catalog')renderCatalog();
+      if(adminSection==='tools')renderMailConnection();
+    }
+    function renderAdminLotteries(){
+      const globalList=lotteries.filter(x=>!x.owner_user_id);
+      $('adminLotteryCount').textContent=`${globalList.length}件`;
+      const list=globalList.slice().sort((a,b)=>(a.deadline_date||'9999').localeCompare(b.deadline_date||'9999'));
+      $('adminLotteryList').innerHTML=list.map(x=>renderLotteryCard(x,true)).join('');
+      bindLotteryEvents(true);
+    }
+    function renderMembers(){
+      $('memberList').innerHTML=(profiles||[]).map(p=>`
+        <div class="member-row">
+          <div class="member-main">
+            <div class="member-email">${esc(p.email||p.display_name||p.id)}</div>
+            <div class="member-meta">${p.role==='admin'?'運営':'会員'} / ${p.membership_status||'pending'}${p.expires_at?' / 期限 '+esc(p.expires_at):''} / メール:${p.mail_connection_status==='connected'?'連携済':p.mail_connection_status==='verification_received'?'確認待ち':'未連携'}${p.mail_last_received_at?' / 最終 '+esc(fmtMailTime(p.mail_last_received_at)):''}</div>
+          </div>
+          <div class="member-actions">
+            ${p.role==='admin'?'<span class="badge">ADMIN</span>':`
+            <select class="control" data-member-status="${esc(p.id)}">
+              <option value="pending" ${p.membership_status==='pending'?'selected':''}>承認待ち</option>
+              <option value="active" ${p.membership_status==='active'?'selected':''}>有効</option>
+              <option value="inactive" ${p.membership_status==='inactive'?'selected':''}>停止</option>
+            </select>`}
+          </div>
+        </div>`).join('');
+      $('memberEmpty').hidden=!!profiles.length;
+      document.querySelectorAll('[data-member-status]').forEach(s=>s.addEventListener('change',()=>updateMemberStatus(s.dataset.memberStatus,s.value)));
+    }
+    async function updateMemberStatus(id,status){
+      if(mode==='demo'){const p=profiles.find(x=>x.id===id);if(p)p.membership_status=status;persistDemo();renderMembers();toast('会員状態を更新しました');return}
+      const {error}=await supabase.from('profiles').update({membership_status:status}).eq('id',id);
+      if(error){toast('更新に失敗しました');console.error(error);return}
+      await loadProfiles();renderMembers();toast('会員状態を更新しました');
+    }
+    function renderCatalog(){
+      const list=[...catalog].sort((a,b)=>(b.release_date||'').localeCompare(a.release_date||''));
+      $('catalogList').innerHTML=list.map(c=>`
+        <div class="catalog-row">
+          <div class="catalog-main">
+            <div class="catalog-title"><span class="brand-label ${esc(c.category)}">${brandLabel(c.category)}</span> ${esc(c.name)}</div>
+            <div class="catalog-meta">${esc(c.release_date||'発売日未設定')} / ${(c.aliases||[]).map(esc).join(', ')}</div>
+          </div>
+          <button class="danger-btn" data-catalog-delete="${esc(c.id||'')}">${c.id?'削除':'内蔵'}</button>
+        </div>`).join('');
+      document.querySelectorAll('[data-catalog-delete]').forEach(b=>{if(!b.dataset.catalogDelete){b.disabled=true;return}b.addEventListener('click',()=>deleteCatalog(b.dataset.catalogDelete))});
+    }
+    async function addCatalog(){
+      const name=$('catalogName').value.trim();if(!name){toast('商品名を入力してください');return}
+      const item={id:rid(),category:$('catalogCategory').value,name,release_date:$('catalogRelease').value||null,aliases:$('catalogAliases').value.split(',').map(x=>x.trim()).filter(Boolean),is_active:true};
+      if(!item.aliases.includes(name))item.aliases.unshift(name);
+      if(mode==='demo'){catalog.push(item);persistDemo();renderCatalog();clearCatalogForm();toast('商品マスタに追加しました');return}
+      const {data,error}=await supabase.from('product_catalog').insert({category:item.category,name:item.name,release_date:item.release_date,aliases:item.aliases,is_active:true}).select().single();
+      if(error){toast('追加に失敗しました');console.error(error);return}
+      catalog.unshift(data);renderCatalog();clearCatalogForm();toast('商品マスタに追加しました');
+    }
+    function clearCatalogForm(){$('catalogName').value='';$('catalogAliases').value='';$('catalogRelease').value=''}
+    async function deleteCatalog(id){
+      if(!confirm('この商品マスタを削除しますか？'))return;
+      if(mode==='demo'){catalog=catalog.filter(x=>x.id!==id);persistDemo();renderCatalog();return}
+      const {error}=await supabase.from('product_catalog').delete().eq('id',id);if(error){toast('削除に失敗しました');return}await loadAllData();
+    }
+
+    function mergedCatalog(){return [...BUILTIN_CATALOG,...catalog].filter((v,i,a)=>a.findIndex(x=>x.category===v.category&&x.name===v.name)===i)}
+    function normalize(s){return String(s||'').normalize('NFKC').toUpperCase()}
+    function findCatalogMatches(text){
+      const n=normalize(text);const found=[];
+      for(const p of mergedCatalog()){
+        const aliases=[p.name,...(p.aliases||[])];
+        let best=-1,bestAlias='';
+        for(const a of aliases){const i=n.indexOf(normalize(a));if(i>=0&&(best<0||i<best)){best=i;bestAlias=a}}
+        if(best>=0)found.push({...p,_index:best,_alias:bestAlias});
+      }
+      return found.sort((a,b)=>a._index-b._index);
+    }
+    function categoriesFromText(text,matches){
+      const out=[];
+      const push=v=>{if(v&&!out.includes(v))out.push(v)};
+      matches.forEach(m=>push(m.category));
+      if(/ONE\s*PIECE|ワンピース|OP-\d+/i.test(text))push('onepiece');
+      if(/POK[EÉ]MON|ポケモン|ポケカ|エーフィ|ブラッキー|ピカチュウ/i.test(text))push('pokemon');
+      if(/DRAGON\s*BALL|ドラゴンボール|スーパーダイバーズ/i.test(text))push('dragonball');
+      if(/BEYBLADE|ベイブレード|玩具|おもちゃ/i.test(text))push('other');
+      return out.length?out:['other'];
+    }
+    function categoryFromText(text,matches){
+      return categoriesFromText(text,matches)[0];
+    }
+    function detectStore(lines){
+      // 店舗名は投稿内の表記をそのまま優先する。
+      // 例: 「イオンキッズリパブリック」が「イオン」に短縮されないよう、
+      // 【抽選販売】直前の有効な行を先に採用する。
+      const marker=lines.findIndex(x=>/【抽選販売】|抽選販売/.test(x));
+      if(marker>0){
+        for(let i=marker-1;i>=0;i--){
+          const s=lines[i].trim();
+          if(s&&!/期間|受付|配送|店舗受取|店頭受取|※/.test(s)&&!/^https?:/.test(s))return s;
+        }
+      }
+      const known=['イオンキッズリパブリック','キッズリパブリック','ポケモンセンターオンライン','お宝創庫グループアプリ','ヤマダデンキ','ビックカメラ','ヨドバシカメラ','セブンネット','楽天ブックス','お宝創庫','おじゃま館','メディオ！','エコツール','ヤマシロヤ','三洋堂','エディオン','ジョーシン','Joshin','トイザらス','古本市場','ふるいち','プレイズ','TSUTAYA','Amazon','イオン','GEO','ゲオ','あみあみ'];
+      const joined=lines.join('\n');
+      const matches=known.filter(x=>joined.includes(x)).sort((a,b)=>b.length-a.length);
+      return matches[0]||'店舗未設定';
+    }
+    function detectDates(text){
+      const year=Number(todayJST().slice(0,4));
+      const range=text.match(/(\d{1,2})月(\d{1,2})日(?:\s*\d{1,2}時(?:\d{1,2}分)?)?\s*[～〜~\-ー]\s*(\d{1,2})月(\d{1,2})日(?:\s*(\d{1,2})時(?:(\d{1,2})分)?)?/);
+      if(!range)return{start:null,deadline:null,deadlineTime:''};
+      const sm=Number(range[1]), dm=Number(range[3]);
+      const deadlineYear=dm<sm?year+1:year;
+      const start=`${year}-${String(sm).padStart(2,'0')}-${String(range[2]).padStart(2,'0')}`;
+      const deadline=`${deadlineYear}-${String(dm).padStart(2,'0')}-${String(range[4]).padStart(2,'0')}`;
+      const h=range[5]?String(range[5]).padStart(2,'0'):'',m=range[6]?String(range[6]).padStart(2,'0'):'00';
+      return{start,deadline,deadlineTime:h?`${h}:${m}`:''};
+    }
+    function cleanHeading(s){return String(s||'').replace(/[↓▼▽→【】\[\]★☆◆◇■□●○]/g,'').trim()}
+    function classifyLinkLabel(label){
+      const s=cleanHeading(label);
+      if(/会員|メンバー|登録/.test(s))return'member';
+      if(/応募|エントリー|抽選フォーム|申込/.test(s))return'entry';
+      if(/店舗|取扱店|ショップ/.test(s))return'store';
+      return'detail';
+    }
+    function parseLinks(text){
+      const lines=text.split(/\r?\n/).map(x=>x.trim());
+      const out=[];
+      for(let i=0;i<lines.length;i++){
+        if(!/^https?:\/\/\S+/i.test(lines[i]))continue;
+        const url=lines[i].match(/^https?:\/\/\S+/i)[0];
+        let prev='';let prev2='';
+        for(let j=i-1;j>=0&&j>=i-4;j--){if(lines[j]&&!/^https?:/.test(lines[j])){if(!prev)prev=lines[j];else{prev2=lines[j];break}}}
+        const p1=cleanHeading(prev),p2=cleanHeading(prev2);
+        let label=p1||'詳細';
+        let type=classifyLinkLabel(p1);
+        if(type==='detail'&&/詳細.*応募フォーム|応募フォーム|エントリー/.test(p2)){
+          type='entry';label=p1?`${p1} 応募`:'応募フォーム';
+        }
+        if(type==='detail'&&/会員登録/.test(p2)){type='member';label='会員登録'}
+        if(type==='detail'&&/トレカ取扱店舗|取扱店舗/.test(p2)){type='store';label=p1||'取扱店舗'}
+        if(/詳細・応募フォーム/.test(p1)){type='entry';label='詳細・応募フォーム'}
+        if(/応募フォーム/.test(p1)){type='entry';label=p1}
+        if(/会員登録/.test(p1)){type='member';label='会員登録'}
+        if(/トレカ取扱店舗/.test(p1)){type='store';label='トレカ取扱店舗'}
+        out.push({label:label||'詳細',url,type,sort_order:out.length+1});
+      }
+      return out;
+    }
+    function detectTitle(lines,store,matches){
+      const start=lines.findIndex(x=>/【抽選販売】|抽選販売/.test(x));
+      const section=(start>=0?lines.slice(start+1):lines);
+      const candidates=[];
+      for(const s0 of section){
+        const s=s0.trim();
+        if(!s||/^https?:/i.test(s)) continue;
+        if(/^(↓|▼|▽)/.test(s)) continue;
+        if(/会員登録|アプリ会員|応募フォーム|詳細|店舗一覧|対象店舗|取扱店舗|受付期間|応募期間|全国配送|店舗受取|店頭受取|配送|発送|必要です|限定。|から応募|まで$/.test(s)) break;
+        if(s===store) continue;
+        candidates.push(s);
+        if(candidates.length>=5) break;
+      }
+      const matchNames=[];
+      for(const m of matches){
+        const alias=String(m._alias||'').trim();
+        const display=/^(OP|EB)-?\d+$/i.test(alias)?m.name:(alias||m.name);
+        if(display&&!matchNames.includes(display))matchNames.push(display);
+      }
+      const merged=[];
+      for(const c of candidates){
+        if(!merged.some(x=>normalize(x)===normalize(c))) merged.push(c);
+      }
+      for(const m of matchNames){
+        if(!merged.some(x=>normalize(x)===normalize(m))) merged.push(m);
+      }
+      return (merged.length?merged:matchNames).join(' / ')||'抽選商品';
+    }
+
+    function parseSource(text){
+      const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+      const matches=findCatalogMatches(text);
+      const categories=categoriesFromText(text,matches);
+      const category=categories[0];
+      const store=detectStore(lines);
+      const dates=detectDates(text);
+      const fulfillment=/全国配送/.test(text)?'全国配送':/配送|発送/.test(text)?'配送':/店舗受取|店舗での受け取り|店頭受取/.test(text)?'店舗受取':'未確認';
+      const membership=/会員登録が必要|会員登録必要|会員登録|アプリ会員|メンバー登録/.test(text);
+      const membership_label=/アプリ会員限定/.test(text)?'アプリ会員限定':/会員登録が必要/.test(text)?'会員登録が必要':'';
+      const extra_requirement=/プレイヤー\s*ID(?:が)?(?:必要|必須)/i.test(text)?'プレイヤーID必須':'';
+      const application_method=/アプリから応募|アプリで応募|アプリ応募/.test(text)?'アプリ':/店頭で応募|店舗で応募/.test(text)?'店頭':/応募フォーム|エントリー/.test(text)?'Web':'未確認';
+      const title=detectTitle(lines,store,matches);
+      const links=parseLinks(text);
+      const notes=[];if(/全国配送/.test(text))notes.push('全国配送');
+      return{store,category,categories,title,start_date:dates.start,deadline_date:dates.deadline||todayJST(),deadline_time:dates.deadlineTime,fulfillment,application_method,membership_required:membership,membership_label,extra_requirement,note:notes.join(' / '),links};
+    }
+
+    function renderLinkEditor(containerId,links,kind){
+      const box=$(containerId);box.innerHTML='';
+      links.forEach((l,i)=>{
+        const row=document.createElement('div');row.className='link-row';
+        row.innerHTML=`
+          <select class="control" data-link-type="${i}">
+            <option value="entry" ${l.type==='entry'?'selected':''}>応募</option>
+            <option value="member" ${l.type==='member'?'selected':''}>会員登録</option>
+            <option value="store" ${l.type==='store'?'selected':''}>店舗</option>
+            <option value="detail" ${l.type==='detail'?'selected':''}>詳細</option>
+          </select>
+          <input class="control" data-link-label="${i}" value="${esc(l.label)}" placeholder="リンク名">
+          <button class="link-remove" data-link-remove="${i}">×</button>
+          <input class="control" data-link-url="${i}" value="${esc(l.url)}" placeholder="URL" style="grid-column:1/3">
+        `;
+        box.appendChild(row);
+      });
+      box.querySelectorAll('[data-link-type]').forEach(el=>el.addEventListener('change',()=>links[+el.dataset.linkType].type=el.value));
+      box.querySelectorAll('[data-link-label]').forEach(el=>el.addEventListener('input',()=>links[+el.dataset.linkLabel].label=el.value));
+      box.querySelectorAll('[data-link-url]').forEach(el=>el.addEventListener('input',()=>links[+el.dataset.linkUrl].url=el.value));
+      box.querySelectorAll('[data-link-remove]').forEach(el=>el.addEventListener('click',()=>{links.splice(+el.dataset.linkRemove,1);renderLinkEditor(containerId,links,kind)}));
+    }
+    function fillPreview(data){
+      $('pStore').value=data.store;renderCategorySelector('pCategorySelector',data.categories||[data.category]);$('pTitle').value=data.title;$('pStart').value=data.start_date||'';
+      $('pDeadline').value=data.deadline_date||'';$('pDeadlineTime').value=data.deadline_time||'';$('pPickup').value=data.fulfillment;
+      $('pApplyMethod').value=data.application_method||'未確認';
+      $('pMembership').value=data.membership_required?'required':'not_required';$('pMembershipLabel').value=data.membership_label||'';$('pExtraRequirement').value=data.extra_requirement||'';$('pNote').value=cleanDisplayNote(data.note)||'';
+      previewLinks=data.links.map(x=>({...x}));renderLinkEditor('pLinks',previewLinks,'preview');$('previewArea').classList.add('show');
+    }
+    function previewPayload(){
+      const categories=getCategorySelection('pCategorySelector');
+      return {
+        store:$('pStore').value.trim()||'店舗未設定',category:categories[0],categories,title:$('pTitle').value.trim()||'抽選商品',
+        start_date:$('pStart').value||null,deadline_date:$('pDeadline').value||todayJST(),deadline_time:$('pDeadlineTime').value||null,
+        fulfillment:$('pPickup').value,application_method:$('pApplyMethod').value,
+        membership_required:$('pMembership').value==='required',membership_label:$('pMembershipLabel').value.trim(),extra_requirement:$('pExtraRequirement').value.trim(),note:cleanDisplayNote($('pNote').value.trim()),
+        links:previewLinks.filter(x=>x.url?.trim()).map((x,i)=>({...x,sort_order:i+1})),is_active:true
+      };
+    }
+    async function createLottery(payload){
+      if(mode==='demo'){
+        const item={...payload,id:rid(),created_at:new Date().toISOString()};lotteries.unshift(item);persistDemo();renderAdminLotteries();renderMember();toast('全会員向け抽選を登録しました');return;
+      }
+      const {data,error}=await supabase.from('lotteries').insert({
+        store:payload.store,category:payload.category,categories:payload.categories,title:payload.title,start_date:payload.start_date,deadline_date:payload.deadline_date,
+        deadline_time:payload.deadline_time||null,fulfillment:payload.fulfillment,application_method:payload.application_method||'未確認',
+        membership_required:payload.membership_required,membership_label:payload.membership_label||'',extra_requirement:payload.extra_requirement||'',
+        note:cleanDisplayNote(payload.note),is_active:true,created_by:session.user.id,source_type:'manual',needs_review:false
+      }).select().single();
+      if(error){console.error(error);toast('抽選登録に失敗しました');return}
+      if(payload.links.length){
+        const rows=payload.links.map((l,i)=>({lottery_id:data.id,label:l.label,url:l.url,type:l.type,sort_order:i+1}));
+        const lr=await supabase.from('lottery_links').insert(rows);if(lr.error)console.error(lr.error);
+      }
+      await loadAllData();toast('全会員へ反映しました');
+    }
+
+    function openEdit(id){
+      const x=lotteries.find(v=>v.id===id);if(!x)return;editingId=id;
+      $('eStore').value=x.store;renderCategorySelector('eCategorySelector',x.categories||[x.category]);$('eTitle').value=x.title;$('eStart').value=x.start_date||'';
+      $('eDeadline').value=x.deadline_date||'';$('eDeadlineTime').value=cleanTime(x.deadline_time);$('ePickup').value=x.fulfillment||'未確認';
+      $('eApplyMethod').value=x.application_method||'未確認';
+      $('eMembership').value=x.membership_required?'required':'not_required';$('eMembershipLabel').value=x.membership_label||'';$('eExtraRequirement').value=x.extra_requirement||'';$('eNote').value=cleanDisplayNote(x.note)||'';
+      editLinks=(x.links||[]).map(v=>({...v}));renderLinkEditor('eLinks',editLinks,'edit');$('editBackdrop').classList.add('show');
+    }
+    async function saveEdit(){
+      const x=lotteries.find(v=>v.id===editingId);if(!x)return;
+      const categories=getCategorySelection('eCategorySelector');
+      const patch={store:$('eStore').value.trim()||'店舗未設定',category:categories[0],categories,title:$('eTitle').value.trim()||'抽選商品',start_date:$('eStart').value||null,
+        deadline_date:$('eDeadline').value||todayJST(),deadline_time:$('eDeadlineTime').value||null,fulfillment:$('ePickup').value,
+        application_method:$('eApplyMethod').value,membership_required:$('eMembership').value==='required',
+        membership_label:$('eMembershipLabel').value.trim(),extra_requirement:$('eExtraRequirement').value.trim(),note:cleanDisplayNote($('eNote').value.trim()),links:editLinks.filter(l=>l.url?.trim()).map((l,i)=>({...l,sort_order:i+1}))};
+      if(mode==='demo'){Object.assign(x,patch);persistDemo();$('editBackdrop').classList.remove('show');renderAll();toast('全会員向け情報を更新しました');return}
+      const {error}=await supabase.from('lotteries').update({
+        store:patch.store,category:patch.category,categories:patch.categories,title:patch.title,start_date:patch.start_date,deadline_date:patch.deadline_date,
+        deadline_time:patch.deadline_time,fulfillment:patch.fulfillment,application_method:patch.application_method,
+        membership_required:patch.membership_required,membership_label:patch.membership_label,extra_requirement:patch.extra_requirement,note:cleanDisplayNote(patch.note),
+        needs_review:false,updated_at:new Date().toISOString()
+      }).eq('id',editingId);
+      if(error){toast('更新に失敗しました');console.error(error);return}
+      await supabase.from('lottery_links').delete().eq('lottery_id',editingId);
+      if(patch.links.length)await supabase.from('lottery_links').insert(patch.links.map((l,i)=>({lottery_id:editingId,label:l.label,url:l.url,type:l.type,sort_order:i+1})));
+      $('editBackdrop').classList.remove('show');await loadAllData();toast('全会員へ更新を反映しました');
+    }
+    async function deleteLottery(id){
+      if(!confirm('この抽選を全会員の一覧から削除しますか？'))return;
+      if(mode==='demo'){lotteries=lotteries.filter(x=>x.id!==id);progressMap.delete(id);persistDemo();renderAll();return}
+      const {error}=await supabase.from('lotteries').delete().eq('id',id);if(error){toast('削除に失敗しました');console.error(error);return}await loadAllData();
+    }
+
+    async function migrateV1Cloud(){
+      let old=[];try{old=JSON.parse(localStorage.getItem(V1_KEY)||'[]')}catch{}
+      if(!Array.isArray(old)||!old.length){toast('この端末にV1データがありません');return}
+      if(mode==='demo'){toast('デモは初回起動時に自動移行済みです');return}
+      let count=0;
+      for(const x of old){
+        const payload={store:x.store||'店舗未設定',category:x.category||'other',categories:[x.category||'other'],title:x.title||'抽選商品',start_date:x.start||null,deadline_date:x.deadline||todayJST(),deadline_time:x.deadlineTime||null,fulfillment:x.pickup||'未確認',application_method:x.application_method||'Web',
+          membership_required:x.membership==='required',membership_label:x.membership_label||'',extra_requirement:x.extra_requirement||'',note:cleanDisplayNote(x.note||''),links:(x.links||[]).map((l,i)=>({label:l.label,url:l.url,type:l.type||'detail',sort_order:i+1}))};
+        const {links,...lotteryFields}=payload;
+        const {data,error}=await supabase.from('lotteries').insert({...lotteryFields,created_by:session.user.id,is_active:true}).select().single();
+        if(error)continue;
+        if(links.length)await supabase.from('lottery_links').insert(links.map(l=>({...l,lottery_id:data.id})));
+        count++;
+      }
+      await loadAllData();toast(`${count}件を本番DBへ移行しました`);
+    }
+
+    async function doLogin(){
+      const email=$('loginEmail').value.trim(),password=$('loginPassword').value;if(!email||!password){toast('メールとパスワードを入力してください');return}
+      const {data,error}=await supabase.auth.signInWithPassword({email,password});
+      if(error){toast('ログインできませんでした');console.error(error);return}
+      session=data.session;await loadCloudProfile();await loadAllData();setupRealtime();showApp();
+    }
+    async function doSignup(){
+      const email=$('loginEmail').value.trim(),password=$('loginPassword').value;if(!email||password.length<6){toast('メールと6文字以上のパスワードを入力してください');return}
+      const {data,error}=await supabase.auth.signUp({email,password});
+      if(error){toast('新規登録できませんでした');console.error(error);return}
+      toast(data.session?'登録しました。承認待ちです':'確認メールを確認してください');
+      if(data.session){session=data.session;await new Promise(r=>setTimeout(r,600));await loadCloudProfile();await loadAllData();showApp()}
+    }
+    async function logout(){
+      if(mode==='cloud'&&supabase)await supabase.auth.signOut();
+      session=null;profile=null;mode='none';showAuth(loadConfig()?'login':'choice');
+    }
+
+    renderCategorySelector('pCategorySelector',['other']);
+    renderCategorySelector('eCategorySelector',['other']);
+
+    // Events
+    $('startDemoBtn').addEventListener('click',initDemo);
+    $('saveSetupBtn').addEventListener('click',()=>{
+      const u=$('setupUrl').value.trim(),k=$('setupKey').value.trim();if(!u||!k){toast('URLと公開キーを入力してください');return}saveConfig(u,k);location.reload();
+    });
+    $('backSetupBtn').addEventListener('click',()=>showAuth('choice'));
+    $('loginBtn').addEventListener('click',doLogin);
+    $('signupBtn').addEventListener('click',doSignup);
+    $('logoutBtn').addEventListener('click',logout);
+    $('copyMailAddressBtn').addEventListener('click',()=>copyText(mailForwardAddress(),'専用アドレスをコピーしました'));
+    $('openMailSetupBtn').addEventListener('click',openMailSetup);
+    $('refreshMailBtn').addEventListener('click',refreshMailData);
+    $('closeMailSetupBtn').addEventListener('click',()=>$('mailSetupBackdrop').classList.remove('show'));
+    $('mailSetupBackdrop').addEventListener('click',e=>{if(e.target===$('mailSetupBackdrop'))$('mailSetupBackdrop').classList.remove('show')});
+    $('copyMailAddressModalBtn').addEventListener('click',()=>copyText(mailForwardAddress(),'専用アドレスをコピーしました'));
+    $('copyMailFilterBtn').addEventListener('click',()=>copyText($('mailFilterQuery').textContent,'フィルター条件をコピーしました'));
+    $('refreshMailModalBtn').addEventListener('click',async()=>{await refreshMailData();openMailSetup()});
+
+    $('memberTabBtn').addEventListener('click',()=>{roleView='member';renderRoleTabs();renderMember()});
+    $('adminTabBtn').addEventListener('click',()=>{if(!currentIsAdmin())return;roleView='admin';renderRoleTabs();renderAdmin()});
+
+    $('searchInput').addEventListener('input',renderMember);
+    $('statusFilter').addEventListener('change',renderMember);
+    $('sortSelect').addEventListener('change',renderMember);
+    document.querySelectorAll('#categoryFilters [data-cat]').forEach(btn=>btn.addEventListener('click',()=>{
+      activeCategory=btn.dataset.cat;document.querySelectorAll('#categoryFilters [data-cat]').forEach(b=>b.classList.toggle('active',b===btn));renderMember();
+    }));
+
+    document.querySelectorAll('[data-admin-section]').forEach(btn=>btn.addEventListener('click',()=>{
+      adminSection=btn.dataset.adminSection;renderAdmin();
+    }));
+    $('refreshMembersBtn').addEventListener('click',async()=>{if(mode==='cloud')await loadProfiles();renderMembers()});
+
+    $('toggleAddBtn').addEventListener('click',()=>$('addCard').classList.toggle('open'));
+    $('clearSourceBtn').addEventListener('click',()=>{$('sourceText').value='';$('previewArea').classList.remove('show')});
+    $('analyzeBtn').addEventListener('click',()=>{
+      const t=$('sourceText').value.trim();if(!t){toast('抽選情報を貼り付けてください');return}
+      fillPreview(parseSource(t));toast('解析しました。内容を確認してください');
+    });
+    $('addLinkBtn').addEventListener('click',()=>{previewLinks.push({label:'応募フォーム',url:'',type:'entry',sort_order:previewLinks.length+1});renderLinkEditor('pLinks',previewLinks,'preview')});
+    $('savePreviewBtn').addEventListener('click',async()=>{await createLottery(previewPayload());$('sourceText').value='';$('previewArea').classList.remove('show');$('addCard').classList.remove('open')});
+
+    $('closeEditBtn').addEventListener('click',()=>$('editBackdrop').classList.remove('show'));
+    $('editBackdrop').addEventListener('click',e=>{if(e.target===$('editBackdrop'))$('editBackdrop').classList.remove('show')});
+    $('editAddLinkBtn').addEventListener('click',()=>{editLinks.push({label:'応募フォーム',url:'',type:'entry',sort_order:editLinks.length+1});renderLinkEditor('eLinks',editLinks,'edit')});
+    $('saveEditBtn').addEventListener('click',saveEdit);
+
+    $('addCatalogBtn').addEventListener('click',addCatalog);
+    $('migrateV1Btn').addEventListener('click',migrateV1Cloud);
+    $('saveMailDomainBtn').addEventListener('click',saveMailDomain);
+
+    function openConfig(){
+      const c=loadConfig()||{};$('configUrl').value=c.url||'';$('configKey').value=c.key||'';$('configBackdrop').classList.add('show');
+    }
+    $('configBtn').addEventListener('click',openConfig);
+    $('openConfigFromTools').addEventListener('click',openConfig);
+    $('closeConfigBtn').addEventListener('click',()=>$('configBackdrop').classList.remove('show'));
+    $('configBackdrop').addEventListener('click',e=>{if(e.target===$('configBackdrop'))$('configBackdrop').classList.remove('show')});
+    $('saveConfigBtn').addEventListener('click',()=>{const u=$('configUrl').value.trim(),k=$('configKey').value.trim();if(!u||!k){toast('URLと公開キーを入力してください');return}saveConfig(u,k);location.reload()});
+    $('clearConfigBtn').addEventListener('click',()=>{if(confirm('Supabase接続設定を削除してデモ選択画面へ戻りますか？')){localStorage.removeItem(CONFIG_KEY);location.reload()}});
+
+    // デモで運営/会員をすぐ切り替えられるショートカット
+    $('modeBadge').addEventListener('click',()=>{
+      if(mode!=='demo')return;
+      const next=profile.role==='admin'?'member':'admin';
+      localStorage.setItem('tom_lottery_v2_demo_role',next);
+      profile={...profile,role:next,email:next==='admin'?'admin@demo.local':'member@demo.local',display_name:next==='admin'?'運営デモ':'会員デモ'};
+      roleView=next==='admin'?'admin':'member';showApp();renderAll();toast(next==='admin'?'運営デモへ切替':'会員デモへ切替');
+    });
+
+    init();
+  </script>
+
+<script src="./loss-review-v2.25.js?v=2.32.1"></script>
+<script src="./mail-ui-cleanup-v2.25.js?v=2.32.1"></script>
+<script src="./progress-polish-v2.26.js?v=2.32.1"></script>
+<script src="./mail-settings-v2.27.js?v=2.32.1"></script>
+<script src="./hide-mail-badges-v2.27.js?v=2.32.1"></script>
+<script src="./member-admin-v2.27.js?v=2.32.1"></script>
+<script src="./auth-flow-v2.28.js?v=2.32.1"></script>
+</body>
+</html>
