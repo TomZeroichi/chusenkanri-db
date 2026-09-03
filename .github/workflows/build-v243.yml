@@ -1,0 +1,82 @@
+name: Build V2.43 stop opportunity UI render loop
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v243.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build stable V2.43 opportunity patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          js = Path('opportunity-types-v2.42.js').read_text(encoding='utf-8')
+
+          replacements = [
+            (
+              "badge.className='tom-type-badge-v242 '+type;badge.textContent=meta.icon+' '+meta.label;",
+              "var badgeClass='tom-type-badge-v242 '+type,badgeText=meta.icon+' '+meta.label;if(badge.className!==badgeClass)badge.className=badgeClass;if(badge.textContent!==badgeText)badge.textContent=badgeText;"
+            ),
+            (
+              "info.innerHTML='';for(var i=0;i<chips.length;i++){var c=document.createElement('span');c.className='tom-type-chip-v242';c.textContent=chips[i];info.appendChild(c);}",
+              "var infoSig=chips.join('\\u001f');if(info.getAttribute('data-tom-sig')!==infoSig){info.innerHTML='';for(var i=0;i<chips.length;i++){var c=document.createElement('span');c.className='tom-type-chip-v242';c.textContent=chips[i];info.appendChild(c);}info.setAttribute('data-tom-sig',infoSig);}"
+            ),
+            (
+              "sel.innerHTML=html;sel.setAttribute('data-tom-status-id',l.id);",
+              "var statusSig=opts.join('\\u001f')+'\\u001e'+cur;if(sel.getAttribute('data-tom-status-sig')!==statusSig){sel.innerHTML=html;sel.setAttribute('data-tom-status-sig',statusSig);}sel.setAttribute('data-tom-status-id',l.id);"
+            ),
+            (
+              "if(a)a.textContent=String(total);if(b)b.textContent=String(un);if(c)c.textContent=String(soon);if(d)d.textContent=String(today);if(e)e.textContent=String(last);",
+              "function setText(el,v){v=String(v);if(el&&el.textContent!==v)el.textContent=v;}setText(a,total);setText(b,un);setText(c,soon);setText(d,today);setText(e,last);"
+            ),
+            (
+              "new MutationObserver(function(){if(!applying)scheduleApply();}).observe(document.documentElement,{childList:true,subtree:true});",
+              "new MutationObserver(function(mutations){if(applying)return;for(var i=0;i<mutations.length;i++){var t=mutations[i].target,el=t&&t.nodeType===1?t:(t&&t.parentElement);if(el&&(el.closest('#'+NAV_ID)||el.closest('#'+MODAL_ID)||el.closest('.tom-type-info-v242')||el.closest('.tom-type-status-v242')||el.closest('.tom-type-admin-v242')))continue;scheduleApply();break;}}).observe(document.documentElement,{childList:true,subtree:true});"
+            )
+          ]
+
+          for old, new in replacements:
+              count = js.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one match, got {count}: {old[:80]}')
+              js = js.replace(old, new, 1)
+
+          js = js.replace('[TOM V2.42]', '[TOM V2.43]')
+          Path('opportunity-types-stable-v2.43.js').write_text(js, encoding='utf-8')
+
+          src = Path('preview-v2.42.html').read_text(encoding='utf-8')
+          html = src.replace('TOM 応募・抽選マネージャー V2.42', 'TOM 応募・抽選マネージャー V2.43')
+          old_ref = '<script src="./opportunity-types-v2.42.js?v=2.42.0"></script>'
+          new_ref = '<script src="./opportunity-types-stable-v2.43.js?v=2.43.0"></script>'
+          if old_ref not in html:
+              raise SystemExit('V2.42 opportunity script reference not found')
+          html = html.replace(old_ref, new_ref, 1)
+          Path('preview-v2.43.html').write_text(html, encoding='utf-8')
+
+          index = '''<!doctype html>
+          <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.43.html?v=2431"><title>TOM 応募・抽選マネージャー</title><script>location.replace('./preview-v2.43.html?v=2431');</script></head><body><p><a href="./preview-v2.43.html?v=2431">TOM 応募・抽選マネージャー V2.43 を開く</a></p></body></html>'''
+          Path('index.html').write_text(index, encoding='utf-8')
+          PY
+
+      - name: Commit V2.43
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add opportunity-types-stable-v2.43.js preview-v2.43.html index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.43 stable opportunity rendering"
+          git push
