@@ -1,0 +1,71 @@
+name: Build self-hosted V2.32
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v232.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Bundle Supabase for browser
+        shell: bash
+        run: |
+          npm install --no-save @supabase/supabase-js@2.112.3 esbuild@0.25.9
+          mkdir -p vendor
+          cat > /tmp/supabase-entry.js <<'EOF'
+          export { createClient } from '@supabase/supabase-js';
+          EOF
+          ./node_modules/.bin/esbuild /tmp/supabase-entry.js \
+            --bundle \
+            --format=esm \
+            --platform=browser \
+            --target=safari14 \
+            --minify \
+            --outfile=vendor/supabase-v2.112.3.mjs
+      - name: Build plain HTML
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, gzip
+
+          root = Path('.')
+          b64 = ''.join((root / f'assets/v2.24/app.gz.b64.part{i}').read_text() for i in range(1,5))
+          html = gzip.decompress(base64.b64decode(''.join(b64.split()))).decode('utf-8')
+          html = html.replace('TOM 抽選マネージャー V2.24', 'TOM 抽選マネージャー V2.32')
+          html = html.replace(
+              "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/+esm",
+              "./vendor/supabase-v2.112.3.mjs"
+          )
+
+          config = '''\n<script>\ntry{\n  localStorage.setItem('tom_lottery_supabase_config_v2',JSON.stringify({\n    url:'https://ofrkhysehruszttnqltt.supabase.co',\n    key:'sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o'\n  }));\n}catch(e){}\n</script>\n'''
+          html = html.replace('</head>', config + '</head>', 1)
+
+          patches = '''\n<script src="./loss-review-v2.25.js?v=2.32.0"></script>\n<script src="./mail-ui-cleanup-v2.25.js?v=2.32.0"></script>\n<script src="./progress-polish-v2.26.js?v=2.32.0"></script>\n<script src="./mail-settings-v2.27.js?v=2.32.0"></script>\n<script src="./hide-mail-badges-v2.27.js?v=2.32.0"></script>\n<script src="./member-admin-v2.27.js?v=2.32.0"></script>\n<script src="./auth-flow-v2.28.js?v=2.32.0"></script>\n'''
+          html = html.replace('</body>', patches + '</body>', 1)
+          (root / 'preview-v2.32.html').write_text(html, encoding='utf-8')
+
+          index = '''<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="refresh" content="0; url=./preview-v2.32.html">\n<title>TOM 抽選マネージャー</title>\n<script>location.replace('./preview-v2.32.html');</script>\n</head>\n<body><p><a href="./preview-v2.32.html">TOM 抽選マネージャー V2.32 を開く</a></p></body>\n</html>\n'''
+          (root / 'index.html').write_text(index, encoding='utf-8')
+          PY
+      - name: Commit generated V2.32
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.32.html index.html vendor/supabase-v2.112.3.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate self-hosted V2.32 for iOS"
+          git push
