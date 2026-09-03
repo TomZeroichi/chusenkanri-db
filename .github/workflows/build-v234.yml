@@ -28,34 +28,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p vendor compat
-
           cat > supabase-entry-v234.js <<'EOF'
           import { createClient } from '@supabase/supabase-js';
           window.__TOM_SUPABASE__ = { createClient };
           EOF
-
-          ./node_modules/.bin/esbuild supabase-entry-v234.js \
-            --bundle \
-            --format=iife \
-            --platform=browser \
-            --target=safari12 \
-            --minify \
-            --outfile=vendor/supabase-v2.112.3-compat.js
-
-          for f in \
-            loss-review-v2.25.js \
-            mail-ui-cleanup-v2.25.js \
-            progress-polish-v2.26.js \
-            mail-settings-v2.27.js \
-            hide-mail-badges-v2.27.js \
-            member-admin-v2.27.js \
-            auth-flow-v2.28.js
+          ./node_modules/.bin/esbuild supabase-entry-v234.js --bundle --format=iife --platform=browser --target=safari12 --minify --outfile=vendor/supabase-v2.112.3-compat.js
+          for f in loss-review-v2.25.js mail-ui-cleanup-v2.25.js progress-polish-v2.26.js mail-settings-v2.27.js hide-mail-badges-v2.27.js member-admin-v2.27.js auth-flow-v2.28.js
           do
-            ./node_modules/.bin/esbuild "$f" \
-              --format=iife \
-              --platform=browser \
-              --target=safari12 \
-              --outfile="compat/$f"
+            ./node_modules/.bin/esbuild "$f" --format=iife --platform=browser --target=safari12 --outfile="compat/$f"
           done
 
       - name: Build V2.34 plain compatible HTML
@@ -71,85 +51,57 @@ jobs:
           let html=zlib.gunzipSync(Buffer.from(b64.replace(/\s+/g,''),'base64')).toString('utf8');
           html=html.replaceAll('TOM 抽選マネージャー V2.24','TOM 抽選マネージャー V2.34');
 
-          // Summary cards: 管理中｜未応募｜3日以内｜本日締切｜当選
-          html=html.replace(
-            '.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}',
-            '.summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:10px}'
-          );
-          html=html.replace(
-            '.summary-grid .summary-card:nth-child(4){background:#f7e39a;border-color:#ceaa2f}',
-            '.summary-grid .summary-card:nth-child(4){background:#f7e39a;border-color:#ceaa2f}\n    .summary-grid .summary-card:nth-child(5){background:#dff4e8;border-color:#65b889}'
-          );
-          html=html.replace(
-            '.summary-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}',
-            '.summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}'
-          );
+          html=html.replace('.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}', '.summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:10px}');
+          html=html.replace('.summary-grid .summary-card:nth-child(4){background:#f7e39a;border-color:#ceaa2f}', '.summary-grid .summary-card:nth-child(4){background:#f7e39a;border-color:#ceaa2f}\n    .summary-grid .summary-card:nth-child(5){background:#dff4e8;border-color:#65b889}');
+          html=html.replace('.summary-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}', '.summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}');
 
-          const oldSummary=`      <section class="summary-grid" aria-label="集計">
-        <div class="summary-card"><div class="summary-label">管理中</div><div class="summary-value" id="countTotal">0</div></div>
-        <div class="summary-card"><div class="summary-label">未応募</div><div class="summary-value" id="countUnapplied">0</div></div>
-        <div class="summary-card"><div class="summary-label">本日締切</div><div class="summary-value" id="countToday">0</div></div>
-        <div class="summary-card"><div class="summary-label">3日以内</div><div class="summary-value" id="countSoon">0</div></div>
-      </section>`;
-          const newSummary=`      <section class="summary-grid" aria-label="集計">
-        <div class="summary-card"><div class="summary-label">管理中</div><div class="summary-value" id="countTotal">0</div></div>
-        <div class="summary-card"><div class="summary-label">未応募</div><div class="summary-value" id="countUnapplied">0</div></div>
-        <div class="summary-card"><div class="summary-label">3日以内</div><div class="summary-value" id="countSoon">0</div></div>
-        <div class="summary-card"><div class="summary-label">本日締切</div><div class="summary-value" id="countToday">0</div></div>
-        <div class="summary-card"><div class="summary-label">当選</div><div class="summary-value" id="countWon">0</div></div>
-      </section>`;
-          if(!html.includes(oldSummary)) throw new Error('summary HTML target not found');
-          html=html.replace(oldSummary,newSummary);
+          const newSummary=[
+            '      <section class="summary-grid" aria-label="集計">',
+            '        <div class="summary-card"><div class="summary-label">管理中</div><div class="summary-value" id="countTotal">0</div></div>',
+            '        <div class="summary-card"><div class="summary-label">未応募</div><div class="summary-value" id="countUnapplied">0</div></div>',
+            '        <div class="summary-card"><div class="summary-label">3日以内</div><div class="summary-value" id="countSoon">0</div></div>',
+            '        <div class="summary-card"><div class="summary-label">本日締切</div><div class="summary-value" id="countToday">0</div></div>',
+            '        <div class="summary-card"><div class="summary-label">当選</div><div class="summary-value" id="countWon">0</div></div>',
+            '      </section>'
+          ].join('\n');
+          const summaryPattern=/      <section class="summary-grid" aria-label="集計">[\s\S]*?      <\/section>/;
+          if(!summaryPattern.test(html)) throw new Error('summary HTML target not found');
+          html=html.replace(summaryPattern,newSummary);
 
-          const oldUpdate=`    function updateSummary(){
-      const ps=lotteries.map(x=>({x,p:getProgress(x.id)}));
-      $('countTotal').textContent=currentIsActive()?ps.filter(o=>!TERMINAL_STATUSES.includes(o.p.status)).length:0;
-      $('countUnapplied').textContent=ps.filter(o=>o.p.status==='未応募').length;
-      $('countToday').textContent=ps.filter(o=>o.p.status==='未応募'&&dayDiff(o.x.deadline_date)===0).length;
-      $('countSoon').textContent=ps.filter(o=>o.p.status==='未応募'&&dayDiff(o.x.deadline_date)>=0&&dayDiff(o.x.deadline_date)<=3).length;
-    }`;
-          const newUpdate=`    function updateSummary(){
-      const ps=lotteries.map(x=>({x,p:getProgress(x.id)}));
-      $('countTotal').textContent=currentIsActive()?ps.filter(o=>!TERMINAL_STATUSES.includes(o.p.status)).length:0;
-      $('countUnapplied').textContent=ps.filter(o=>o.p.status==='未応募').length;
-      $('countSoon').textContent=ps.filter(o=>o.p.status==='未応募'&&dayDiff(o.x.deadline_date)>=0&&dayDiff(o.x.deadline_date)<=3).length;
-      $('countToday').textContent=ps.filter(o=>o.p.status==='未応募'&&dayDiff(o.x.deadline_date)===0).length;
-      $('countWon').textContent=ps.filter(o=>o.p.status==='当選').length;
-    }`;
-          if(!html.includes(oldUpdate)) throw new Error('updateSummary target not found');
-          html=html.replace(oldUpdate,newUpdate);
+          const newUpdate=[
+            '    function updateSummary(){',
+            '      const ps=lotteries.map(x=>({x,p:getProgress(x.id)}));',
+            "      $('countTotal').textContent=currentIsActive()?ps.filter(o=>!TERMINAL_STATUSES.includes(o.p.status)).length:0;",
+            "      $('countUnapplied').textContent=ps.filter(o=>o.p.status==='未応募').length;",
+            "      $('countSoon').textContent=ps.filter(o=>o.p.status==='未応募'&&dayDiff(o.x.deadline_date)>=0&&dayDiff(o.x.deadline_date)<=3).length;",
+            "      $('countToday').textContent=ps.filter(o=>o.p.status==='未応募'&&dayDiff(o.x.deadline_date)===0).length;",
+            "      $('countWon').textContent=ps.filter(o=>o.p.status==='当選').length;",
+            '    }'
+          ].join('\n');
+          const updatePattern=/    function updateSummary\(\)\{[\s\S]*?\n    \}\n    function updateArchiveUI/;
+          if(!updatePattern.test(html)) throw new Error('updateSummary target not found');
+          html=html.replace(updatePattern,newUpdate+'\n    function updateArchiveUI');
 
-          html=html.replace(
-            /const\s*\{\s*createClient\s*\}\s*=\s*await\s*import\([^;]+\);/g,
-            "const { createClient } = window.__TOM_SUPABASE__;"
-          );
+          html=html.replace(/const\s*\{\s*createClient\s*\}\s*=\s*await\s*import\([^;]+\);/g, "const { createClient } = window.__TOM_SUPABASE__;");
 
-          const config=`\n<script>\ntry{localStorage.setItem('tom_lottery_supabase_config_v2',JSON.stringify({url:'https://ofrkhysehruszttnqltt.supabase.co',key:'sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o'}));}catch(e){}\n</script>\n<script src="./vendor/supabase-v2.112.3-compat.js?v=2.34.0"></script>\n`;
+          const config='\n<script>\ntry{localStorage.setItem(\'tom_lottery_supabase_config_v2\',JSON.stringify({url:\'https://ofrkhysehruszttnqltt.supabase.co\',key:\'sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o\'}));}catch(e){}\n</script>\n<script src="./vendor/supabase-v2.112.3-compat.js?v=2.34.0"></script>\n';
           html=html.replace('</head>',config+'</head>');
 
-          let count=0;
           html=html.replace(/<script(?![^>]*\bsrc\s*=)([^>]*)>([\s\S]*?)<\/script>/gi,(whole,attrs,code)=>{
-            count++;
-            try{
-              const out=esbuild.transformSync(code,{loader:'js',target:'safari12',format:'iife',minify:false,legalComments:'none'}).code;
-              return `<script${attrs}>${out}</script>`;
-            }catch(e){
-              console.error('inline script transform failed',count,e.message);
-              throw e;
-            }
+            const out=esbuild.transformSync(code,{loader:'js',target:'safari12',format:'iife',minify:false,legalComments:'none'}).code;
+            return `<script${attrs}>${out}</script>`;
           });
 
-          const diag=`\n<div id="v234-ios-diag" style="position:fixed;left:8px;right:8px;top:8px;z-index:2147483647;background:#fff4c7;border:1px solid #e2c65e;border-radius:9px;padding:8px 10px;font:700 11px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:#665000">V2.34 iOS互換モード 起動中...</div>\n<script>\n(function(){var n=0,t=setInterval(function(){n++;var a=document.getElementById('app'),b=document.getElementById('authShell'),d=document.getElementById('v234-ios-diag');var ok=(a&&!a.classList.contains('hidden'))||(b&&!b.classList.contains('hidden'));if(ok){clearInterval(t);if(d)d.style.display='none';}else if(n>=20){clearInterval(t);if(d){d.textContent='V2.34: 画面初期化で停止しています。この表示をスクショしてください。';d.style.background='#fff0f0';d.style.borderColor='#e49a9a';d.style.color='#8c2222';}}},500);})();\n</script>\n`;
+          const diag='\n<div id="v234-ios-diag" style="position:fixed;left:8px;right:8px;top:8px;z-index:2147483647;background:#fff4c7;border:1px solid #e2c65e;border-radius:9px;padding:8px 10px;font:700 11px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:#665000">V2.34 iOS互換モード 起動中...</div>\n<script>(function(){var n=0,t=setInterval(function(){n++;var a=document.getElementById(\'app\'),b=document.getElementById(\'authShell\'),d=document.getElementById(\'v234-ios-diag\');var ok=(a&&!a.classList.contains(\'hidden\'))||(b&&!b.classList.contains(\'hidden\'));if(ok){clearInterval(t);if(d)d.style.display=\'none\';}else if(n>=20){clearInterval(t);if(d){d.textContent=\'V2.34: 画面初期化で停止しています。この表示をスクショしてください。\';d.style.background=\'#fff0f0\';d.style.borderColor=\'#e49a9a\';d.style.color=\'#8c2222\';}}},500);})();</script>\n';
           html=html.replace('<body>','<body>'+diag);
 
-          const patches=`\n<script src="./compat/loss-review-v2.25.js?v=2.34.0"></script>\n<script src="./compat/mail-ui-cleanup-v2.25.js?v=2.34.0"></script>\n<script src="./compat/progress-polish-v2.26.js?v=2.34.0"></script>\n<script src="./compat/mail-settings-v2.27.js?v=2.34.0"></script>\n<script src="./compat/hide-mail-badges-v2.27.js?v=2.34.0"></script>\n<script src="./compat/member-admin-v2.27.js?v=2.34.0"></script>\n<script src="./compat/auth-flow-v2.28.js?v=2.34.0"></script>\n`;
+          const patches='\n<script src="./compat/loss-review-v2.25.js?v=2.34.0"></script>\n<script src="./compat/mail-ui-cleanup-v2.25.js?v=2.34.0"></script>\n<script src="./compat/progress-polish-v2.26.js?v=2.34.0"></script>\n<script src="./compat/mail-settings-v2.27.js?v=2.34.0"></script>\n<script src="./compat/hide-mail-badges-v2.27.js?v=2.34.0"></script>\n<script src="./compat/member-admin-v2.27.js?v=2.34.0"></script>\n<script src="./compat/auth-flow-v2.28.js?v=2.34.0"></script>\n';
           html=html.replace('</body>',patches+'</body>');
           fs.writeFileSync('preview-v2.34.html',html);
 
-          const index=`<!doctype html>\n<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.34.html"><title>TOM 抽選マネージャー</title><script>location.replace('./preview-v2.34.html');</script></head><body><p><a href="./preview-v2.34.html">TOM 抽選マネージャー V2.34 を開く</a></p></body></html>\n`;
+          const index='<!doctype html>\n<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.34.html"><title>TOM 抽選マネージャー</title><script>location.replace(\'./preview-v2.34.html\');</script></head><body><p><a href="./preview-v2.34.html">TOM 抽選マネージャー V2.34 を開く</a></p></body></html>\n';
           fs.writeFileSync('index.html',index);
           EOF
-
           node build-v234.mjs
 
       - name: Commit generated V2.34
