@@ -1,0 +1,115 @@
+name: Build iOS-compat V2.33
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v233.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install build tools
+        run: npm install --no-save @supabase/supabase-js@2.112.3 esbuild@0.25.9
+
+      - name: Build Safari compatible assets
+        shell: bash
+        run: |
+          mkdir -p vendor compat
+
+          cat > supabase-entry-v233.js <<'EOF'
+          import { createClient } from '@supabase/supabase-js';
+          window.__TOM_SUPABASE__ = { createClient };
+          EOF
+
+          ./node_modules/.bin/esbuild supabase-entry-v233.js \
+            --bundle \
+            --format=iife \
+            --platform=browser \
+            --target=safari12 \
+            --minify \
+            --outfile=vendor/supabase-v2.112.3-compat.js
+
+          for f in \
+            loss-review-v2.25.js \
+            mail-ui-cleanup-v2.25.js \
+            progress-polish-v2.26.js \
+            mail-settings-v2.27.js \
+            hide-mail-badges-v2.27.js \
+            member-admin-v2.27.js \
+            auth-flow-v2.28.js
+          do
+            ./node_modules/.bin/esbuild "$f" \
+              --format=iife \
+              --platform=browser \
+              --target=safari12 \
+              --outfile="compat/$f"
+          done
+
+      - name: Build V2.33 plain compatible HTML
+        shell: bash
+        run: |
+          cat > build-v233.mjs <<'EOF'
+          import fs from 'node:fs';
+          import zlib from 'node:zlib';
+          import * as esbuild from 'esbuild';
+
+          let b64='';
+          for(let i=1;i<=4;i++) b64 += fs.readFileSync(`assets/v2.24/app.gz.b64.part${i}`,'utf8');
+          let html=zlib.gunzipSync(Buffer.from(b64.replace(/\s+/g,''),'base64')).toString('utf8');
+          html=html.replaceAll('TOM 抽選マネージャー V2.24','TOM 抽選マネージャー V2.33');
+
+          html=html.replace(
+            /const\s*\{\s*createClient\s*\}\s*=\s*await\s*import\([^;]+\);/g,
+            "const { createClient } = window.__TOM_SUPABASE__;"
+          );
+
+          const config=`\n<script>\ntry{localStorage.setItem('tom_lottery_supabase_config_v2',JSON.stringify({url:'https://ofrkhysehruszttnqltt.supabase.co',key:'sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o'}));}catch(e){}\n</script>\n<script src="./vendor/supabase-v2.112.3-compat.js?v=2.33.0"></script>\n`;
+          html=html.replace('</head>',config+'</head>');
+
+          let count=0;
+          html=html.replace(/<script(?![^>]*\bsrc\s*=)([^>]*)>([\s\S]*?)<\/script>/gi,(whole,attrs,code)=>{
+            count++;
+            try{
+              const out=esbuild.transformSync(code,{loader:'js',target:'safari12',format:'iife',minify:false,legalComments:'none'}).code;
+              return `<script${attrs}>${out}</script>`;
+            }catch(e){
+              console.error('inline script transform failed',count,e.message);
+              throw e;
+            }
+          });
+
+          const diag=`\n<div id="v233-ios-diag" style="position:fixed;left:8px;right:8px;top:8px;z-index:2147483647;background:#fff4c7;border:1px solid #e2c65e;border-radius:9px;padding:8px 10px;font:700 11px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:#665000">V2.33 iOS互換モード 起動中...</div>\n<script>\n(function(){var n=0,t=setInterval(function(){n++;var a=document.getElementById('app'),b=document.getElementById('authShell'),d=document.getElementById('v233-ios-diag');var ok=(a&&!a.classList.contains('hidden'))||(b&&!b.classList.contains('hidden'));if(ok){clearInterval(t);if(d)d.style.display='none';}else if(n>=20){clearInterval(t);if(d){d.textContent='V2.33: 画面初期化で停止しています。この表示をスクショしてください。';d.style.background='#fff0f0';d.style.borderColor='#e49a9a';d.style.color='#8c2222';}}},500);})();\n</script>\n`;
+          html=html.replace('<body>','<body>'+diag);
+
+          const patches=`\n<script src="./compat/loss-review-v2.25.js?v=2.33.0"></script>\n<script src="./compat/mail-ui-cleanup-v2.25.js?v=2.33.0"></script>\n<script src="./compat/progress-polish-v2.26.js?v=2.33.0"></script>\n<script src="./compat/mail-settings-v2.27.js?v=2.33.0"></script>\n<script src="./compat/hide-mail-badges-v2.27.js?v=2.33.0"></script>\n<script src="./compat/member-admin-v2.27.js?v=2.33.0"></script>\n<script src="./compat/auth-flow-v2.28.js?v=2.33.0"></script>\n`;
+          html=html.replace('</body>',patches+'</body>');
+          fs.writeFileSync('preview-v2.33.html',html);
+
+          const index=`<!doctype html>\n<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.33.html"><title>TOM 抽選マネージャー</title><script>location.replace('./preview-v2.33.html');</script></head><body><p><a href="./preview-v2.33.html">TOM 抽選マネージャー V2.33 を開く</a></p></body></html>\n`;
+          fs.writeFileSync('index.html',index);
+          EOF
+
+          node build-v233.mjs
+
+      - name: Commit generated V2.33
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.33.html index.html vendor/supabase-v2.112.3-compat.js compat/
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate iOS-compatible V2.33"
+          git push
