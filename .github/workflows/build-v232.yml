@@ -18,22 +18,23 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Bundle Supabase for browser
         shell: bash
         run: |
           npm install --no-save @supabase/supabase-js@2.112.3 esbuild@0.25.9
           mkdir -p vendor
-          cat > /tmp/supabase-entry.js <<'EOF'
+          cat > supabase-entry.js <<'EOF'
           export { createClient } from '@supabase/supabase-js';
           EOF
-          ./node_modules/.bin/esbuild /tmp/supabase-entry.js \
+          ./node_modules/.bin/esbuild supabase-entry.js \
             --bundle \
             --format=esm \
             --platform=browser \
             --target=safari14 \
             --minify \
             --outfile=vendor/supabase-v2.112.3.mjs
+          rm -f supabase-entry.js
       - name: Build plain HTML
         shell: bash
         run: |
@@ -53,7 +54,7 @@ jobs:
           config = '''\n<script>\ntry{\n  localStorage.setItem('tom_lottery_supabase_config_v2',JSON.stringify({\n    url:'https://ofrkhysehruszttnqltt.supabase.co',\n    key:'sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o'\n  }));\n}catch(e){}\n</script>\n'''
           html = html.replace('</head>', config + '</head>', 1)
 
-          patches = '''\n<script src="./loss-review-v2.25.js?v=2.32.0"></script>\n<script src="./mail-ui-cleanup-v2.25.js?v=2.32.0"></script>\n<script src="./progress-polish-v2.26.js?v=2.32.0"></script>\n<script src="./mail-settings-v2.27.js?v=2.32.0"></script>\n<script src="./hide-mail-badges-v2.27.js?v=2.32.0"></script>\n<script src="./member-admin-v2.27.js?v=2.32.0"></script>\n<script src="./auth-flow-v2.28.js?v=2.32.0"></script>\n'''
+          patches = '''\n<script src="./loss-review-v2.25.js?v=2.32.1"></script>\n<script src="./mail-ui-cleanup-v2.25.js?v=2.32.1"></script>\n<script src="./progress-polish-v2.26.js?v=2.32.1"></script>\n<script src="./mail-settings-v2.27.js?v=2.32.1"></script>\n<script src="./hide-mail-badges-v2.27.js?v=2.32.1"></script>\n<script src="./member-admin-v2.27.js?v=2.32.1"></script>\n<script src="./auth-flow-v2.28.js?v=2.32.1"></script>\n'''
           html = html.replace('</body>', patches + '</body>', 1)
           (root / 'preview-v2.32.html').write_text(html, encoding='utf-8')
 
