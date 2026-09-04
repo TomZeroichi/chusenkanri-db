@@ -1,0 +1,80 @@
+name: Build V2.49 Editable Entry Types
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v249.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build V2.49 from V2.48
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          src = Path('preview-v2.48.html').read_text(encoding='utf-8')
+          html = src.replace('V2.48', 'V2.49')
+
+          def replace_once(old, new, label):
+              global html
+              if old not in html:
+                  raise SystemExit(f'missing marker: {label}')
+              html = html.replace(old, new, 1)
+
+          # Add entry-type/payment fields to the existing edit modal.
+          old = '''      <div class="field-grid">\n        <label class="field"><span>店舗名</span><input class="control" id="eStore"></label>'''
+          new = '''      <div class="field-grid">\n        <label class="field"><span>案件種別（変更可）</span>\n          <select class="control" id="eOpportunityType">\n            <option value="lottery">🎯 抽選</option>\n            <option value="all_applicants">🎁 応募者全員サービス</option>\n            <option value="preorder">🛒 期間限定受注</option>\n            <option value="campaign">🎫 キャンペーン</option>\n          </select>\n        </label>\n        <div class="field" id="eOpportunityTypeHint"><span>種別設定</span><div class="helper" style="margin-top:7px">自動判定後でも、ここで手動変更できます。</div></div>\n        <div class="field full" id="eOpportunityExtraFields">\n          <div class="field-grid">\n            <label class="field"><span>支払タイミング</span>\n              <select class="control" id="ePaymentTiming">\n                <option value="unknown">未確認</option>\n                <option value="application">応募・注文時に支払</option>\n                <option value="after_application">応募・注文後に支払</option>\n                <option value="cod">商品到着時（代引）</option>\n                <option value="free">無料</option>\n              </select>\n            </label>\n            <label class="field"><span>負担金・商品代金（円）</span><input class="control" id="ePaymentAmount" type="number" min="0" inputmode="numeric" placeholder="未確認"></label>\n            <label class="field full"><span>発送・お届け予定</span><input class="control" id="eShippingEstimate" placeholder="例：12月頃 / 応募後2〜3か月"></label>\n          </div>\n        </div>\n        <label class="field"><span>店舗名</span><input class="control" id="eStore"></label>'''
+          replace_once(old, new, 'edit modal fields')
+
+          # Add edit-form visibility helper before openEdit.
+          old = '''  function openEdit(id) {'''
+          new = '''  function updateEditOpportunityFields() {\n    const type = $("eOpportunityType") ? $("eOpportunityType").value : "lottery";\n    const extra = $("eOpportunityExtraFields");\n    if (extra) extra.classList.toggle("hidden", type === "lottery");\n  }\n  function openEdit(id) {'''
+          replace_once(old, new, 'openEdit helper')
+
+          # Populate metadata when opening an existing entry.
+          old = '''    editingId = id;\n    $("eStore").value = x.store;'''
+          new = '''    editingId = id;\n    $("eOpportunityType").value = x.opportunity_type || "lottery";\n    $("ePaymentTiming").value = x.payment_timing || "unknown";\n    $("ePaymentAmount").value = x.payment_amount === null || x.payment_amount === undefined ? "" : String(x.payment_amount);\n    $("eShippingEstimate").value = x.shipping_estimate || "";\n    updateEditOpportunityFields();\n    $("eStore").value = x.store;'''
+          replace_once(old, new, 'populate edit metadata')
+
+          # Include metadata in the edit patch for demo and cloud modes.
+          old = '''    const patch = {\n      store: $("eStore").value.trim() || "\\u5E97\\u8217\\u672A\\u8A2D\\u5B9A",'''
+          new = '''    const patch = {\n      opportunity_type: $("eOpportunityType").value || "lottery",\n      payment_timing: $("eOpportunityType").value === "lottery" ? "unknown" : ($("ePaymentTiming").value || "unknown"),\n      payment_amount: $("eOpportunityType").value === "lottery" || $("ePaymentAmount").value === "" ? null : Number($("ePaymentAmount").value),\n      shipping_estimate: $("eOpportunityType").value === "lottery" ? null : ($("eShippingEstimate").value.trim() || null),\n      store: $("eStore").value.trim() || "\\u5E97\\u8217\\u672A\\u8A2D\\u5B9A",'''
+          replace_once(old, new, 'edit patch metadata')
+
+          # Persist metadata in Supabase together with the normal edit fields.
+          old = '''    const { error } = await supabase.from("lotteries").update({\n      store: patch.store,'''
+          new = '''    const { error } = await supabase.from("lotteries").update({\n      opportunity_type: patch.opportunity_type,\n      payment_timing: patch.payment_timing,\n      payment_amount: patch.payment_amount,\n      shipping_estimate: patch.shipping_estimate,\n      store: patch.store,'''
+          replace_once(old, new, 'cloud update metadata')
+
+          # Live show/hide of type-specific edit fields.
+          old = '''  renderCategorySelector("pCategorySelector", ["other"]);\n  renderCategorySelector("eCategorySelector", ["other"]);'''
+          new = '''  renderCategorySelector("pCategorySelector", ["other"]);\n  renderCategorySelector("eCategorySelector", ["other"]);\n  $("eOpportunityType").addEventListener("change", updateEditOpportunityFields);\n  updateEditOpportunityFields();'''
+          replace_once(old, new, 'edit type change binding')
+
+          Path('preview-v2.49.html').write_text(html, encoding='utf-8')
+
+          index = '''<!doctype html>
+          <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.49.html?v=2491"><title>TOM エントリーマネージャー</title><script>location.replace('./preview-v2.49.html?v=2491');</script></head><body><p><a href="./preview-v2.49.html?v=2491">TOM エントリーマネージャー V2.49 を開く</a></p></body></html>'''
+          Path('index.html').write_text(index, encoding='utf-8')
+          PY
+
+      - name: Commit V2.49
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.49.html index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.49 editable entry types"
+          git push
