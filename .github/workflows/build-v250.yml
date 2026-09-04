@@ -1,0 +1,76 @@
+name: Build V2.50 Persistent Entry Type Filter
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v250.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build V2.50 from V2.49
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          src = Path('preview-v2.49.html').read_text(encoding='utf-8')
+          html = src.replace('V2.49', 'V2.50')
+
+          old = '''    const filtered = lotteries.filter((x) => {
+      const p = getProgress(x.id);
+      const hay = "".concat(x.store, " ").concat(x.title).toLowerCase();
+      return (!q || hay.includes(q)) && (activeCategory === "all" || hasCategory(x, activeCategory)) && (status === "all" || p.status === status);
+    });'''
+          new = '''    let typeFilter = "all";
+    try {
+      typeFilter = localStorage.getItem("tom_opportunity_type_filter_v242") || "all";
+    } catch {
+      typeFilter = "all";
+    }
+    const filtered = lotteries.filter((x) => {
+      const p = getProgress(x.id);
+      const hay = "".concat(x.store, " ").concat(x.title).toLowerCase();
+      const typeMatch = typeFilter === "all" || (x.opportunity_type || "lottery") === typeFilter;
+      return typeMatch && (!q || hay.includes(q)) && (activeCategory === "all" || hasCategory(x, activeCategory)) && (status === "all" || p.status === status);
+    });'''
+          if old not in html:
+              raise SystemExit('renderMember filter target not found')
+          html = html.replace(old, new, 1)
+
+          old_summary = '''    const ps = lotteries.map((x) => ({ x, p: getProgress(x.id) }));'''
+          new_summary = '''    let summaryTypeFilter = "all";
+    try {
+      summaryTypeFilter = localStorage.getItem("tom_opportunity_type_filter_v242") || "all";
+    } catch {
+      summaryTypeFilter = "all";
+    }
+    const ps = lotteries.filter((x) => summaryTypeFilter === "all" || (x.opportunity_type || "lottery") === summaryTypeFilter).map((x) => ({ x, p: getProgress(x.id) }));'''
+          if old_summary not in html:
+              raise SystemExit('updateSummary target not found')
+          html = html.replace(old_summary, new_summary, 1)
+
+          Path('preview-v2.50.html').write_text(html, encoding='utf-8')
+
+          index = '''<!doctype html>
+          <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.50.html?v=2501"><title>TOM エントリーマネージャー</title><script>location.replace('./preview-v2.50.html?v=2501');</script></head><body><p><a href="./preview-v2.50.html?v=2501">TOM エントリーマネージャー V2.50 を開く</a></p></body></html>'''
+          Path('index.html').write_text(index, encoding='utf-8')
+          PY
+
+      - name: Commit V2.50
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.50.html index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.50 persistent entry type filter"
+          git push
