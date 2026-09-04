@@ -1,0 +1,34 @@
+name: Build V2.51 Lottery Result Announcement
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v251.yml'
+      - 'scripts/build_v251.py'
+      - 'lottery-result-ui-v2.51.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build V2.51 from V2.50
+        shell: bash
+        run: python scripts/build_v251.py
+
+      - name: Commit V2.51
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.51.html index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.51 lottery result announcement"
+          git push
