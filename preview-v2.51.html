@@ -1,0 +1,2085 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>TOM エントリーマネージャー V2.51</title>
+  <style>
+    :root{
+      --bg:#f4f6fa;--card:#fff;--text:#1e2430;--muted:#7b8494;--line:#dfe4ec;
+      --blue:#3d83ef;--blue-dark:#2469ce;--blue-soft:#eaf3ff;
+      --danger:#e34855;--danger-soft:#fff0f2;--success:#21a36b;--warn:#f5a623;
+      --shadow:0 7px 24px rgba(28,39,61,.08);
+      --pokemon:#ffe600;--pokemon-soft:#fffec7;--pokemon-text:#4a4000;
+      --onepiece:#d91f4e;--onepiece-soft:#ffe3ec;
+      --dragonball:#ff9f1a;--dragonball-soft:#fff1bf;
+      --other:#25a7ff;--other-soft:#e2f5ff;
+    }
+    *{box-sizing:border-box}
+    html{background:var(--bg)}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .hidden{display:none!important}
+    .app{max-width:820px;margin:0 auto;padding:14px 12px 42px}
+    .header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .header-title h1{font-size:20px;margin:0;font-weight:900;letter-spacing:-.02em}
+    .header-title p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+    .header-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800;border:1px solid var(--line);background:var(--card)}
+    .badge.cloud{color:var(--success);border-color:#bfe9d4;background:#f1fbf6}
+    .badge.demo{color:#9b6b00;border-color:#f1dfa5;background:#fffaf0}
+    .icon-btn,.soft-btn,.primary-btn,.danger-btn{border:0;border-radius:11px;min-height:40px;padding:9px 12px;font-weight:800}
+    .icon-btn{width:40px;padding:0;background:var(--card);border:1px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.03)}
+    .soft-btn{background:var(--card);border:1px solid var(--line);color:var(--text)}
+    .primary-btn{background:var(--blue);color:#fff}
+    .primary-btn:hover{background:var(--blue-dark)}
+    .danger-btn{background:var(--danger-soft);color:var(--danger);border:1px solid #f4c7cd}
+    .primary-btn:disabled,.soft-btn:disabled{opacity:.45;cursor:not-allowed}
+    .tabbar{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:8px 0 12px}
+    .tabbar button{border:1px solid var(--line);background:var(--card);padding:10px;border-radius:12px;font-weight:900;color:var(--muted)}
+    .tabbar button.active{background:var(--blue);border-color:var(--blue);color:#fff}
+    .notice{border:1px solid #d7e6ff;background:#f5f9ff;border-radius:13px;padding:11px 12px;font-size:12px;color:#42628f;margin:10px 0}
+    .notice.warn{border-color:#f1dda0;background:#fffaf0;color:#8c6600}
+    .summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:10px}
+    .summary-card{background:var(--card);border:2px solid #aeb9c9;border-radius:14px;padding:8px 6px;box-shadow:0 2px 10px rgba(0,0,0,.03);min-width:0;aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .summary-grid .summary-card:nth-child(1){background:#dbeeff;border-color:#6da9dd}
+    .summary-grid .summary-card:nth-child(2){background:#f7f29a;border-color:#c9bd24}
+    .summary-grid .summary-card:nth-child(3){background:#f9d9e4;border-color:#d97593}
+    .summary-grid .summary-card:nth-child(4){background:#f7e39a;border-color:#ceaa2f}
+    .summary-grid .summary-card:nth-child(5){background:#dff4e8;border-color:#65b889}
+    .summary-label{font-size:17px;color:#38465a;font-weight:900;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;text-align:center}
+    .summary-value{font-size:30px;line-height:1;font-weight:900;margin-top:5px;text-align:center;color:#1d2736}
+    .toolbar{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:10px;margin-bottom:12px}
+    .search-row{display:grid;grid-template-columns:minmax(0,1fr) 145px;gap:8px}
+    .control{width:100%;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:11px;padding:10px 11px;outline:none}
+    .control:focus{border-color:#9ec2f8;box-shadow:0 0 0 3px #eaf3ff}
+    textarea.control{min-height:118px;resize:vertical}
+    .category-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .cat-filter{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:900}
+    .cat-filter.active[data-cat="all"]{background:#1f2734;color:#fff;border-color:#1f2734}
+    .cat-filter.active[data-cat="pokemon"]{background:var(--pokemon);color:#332b00;border-color:var(--pokemon)}
+    .cat-filter.active[data-cat="onepiece"]{background:var(--onepiece);color:#fff;border-color:var(--onepiece)}
+    .cat-filter.active[data-cat="dragonball"]{background:var(--dragonball);color:#fff;border-color:var(--dragonball)}
+    .cat-filter.active[data-cat="other"]{background:var(--other);color:#fff;border-color:var(--other)}
+    .list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 2px 8px}
+    .list-head h2{font-size:15px;margin:0;font-weight:900}
+    .sort-select{width:auto;min-width:150px;padding:8px 9px;font-size:12px}
+    .lottery-list{display:flex;flex-direction:column;gap:8px}
+    .lottery-row{position:relative;border:2px solid var(--line);border-left-width:0;border-radius:16px;background:var(--card);overflow:hidden;box-shadow:0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:10px;background:var(--strip-color,var(--line));z-index:1}
+    .lottery-row.pokemon{--strip-color:var(--pokemon);border-color:rgba(255,230,0,.72);background:var(--pokemon-soft);box-shadow:0 0 0 1px rgba(255,230,0,.55),0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row.onepiece{--strip-color:var(--onepiece);border-color:rgba(217,31,78,.38);background:var(--onepiece-soft);box-shadow:0 0 0 1px rgba(217,31,78,.28),0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row.dragonball{--strip-color:var(--dragonball);border-color:rgba(255,159,26,.45);background:var(--dragonball-soft);box-shadow:0 0 0 1px rgba(255,159,26,.32),0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row.other{--strip-color:var(--other);border-color:rgba(37,167,255,.36);background:var(--other-soft);box-shadow:0 0 0 1px rgba(37,167,255,.26),0 2px 10px rgba(25,36,58,.03)}
+    .lottery-row.multi-2::before{background:linear-gradient(to bottom,var(--multi1) 0 50%,var(--multi2) 50% 100%)}
+    .lottery-row.multi-3::before{background:linear-gradient(to bottom,var(--multi1) 0 33.33%,var(--multi2) 33.33% 66.66%,var(--multi3) 66.66% 100%)}
+    .lottery-row.multi-4::before{background:linear-gradient(to bottom,var(--multi1) 0 25%,var(--multi2) 25% 50%,var(--multi3) 50% 75%,var(--multi4) 75% 100%)}
+    .row-summary{width:100%;border:0;background:transparent;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 9px 10px 18px;text-align:left}
+    .lottery-row.pokemon .row-summary{background:rgba(255,246,145,.52)}
+    .lottery-row.onepiece .row-summary{background:rgba(255,183,205,.38)}
+    .lottery-row.dragonball .row-summary{background:rgba(255,214,125,.45)}
+    .lottery-row.other .row-summary{background:rgba(168,228,255,.42)}
+    .row-main{min-width:0}
+    .meta-line{display:flex;align-items:center;gap:6px;min-width:0;margin-bottom:4px;flex-wrap:wrap}
+    .brand-label,.unapplied-badge,.small-chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-weight:900;white-space:nowrap}
+    .brand-stack{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;max-width:100%}
+    .brand-label{padding:4px 7px;font-size:10px;letter-spacing:.03em}
+    .category-multi{display:flex;flex-wrap:wrap;gap:7px}
+    .category-choice{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 11px;font-size:11px;font-weight:900}
+    .category-choice.active[data-value="pokemon"]{background:var(--pokemon);border-color:var(--pokemon);color:#332b00}
+    .category-choice.active[data-value="onepiece"]{background:var(--onepiece);border-color:var(--onepiece);color:#fff}
+    .category-choice.active[data-value="dragonball"]{background:var(--dragonball);border-color:var(--dragonball);color:#fff}
+    .category-choice.active[data-value="other"]{background:var(--other);border-color:var(--other);color:#fff}
+    .brand-label.pokemon{background:var(--pokemon);color:#332b00}
+    .brand-label.onepiece{background:var(--onepiece);color:#fff}
+    .brand-label.dragonball{background:var(--dragonball);color:#fff}
+    .brand-label.other{background:var(--other);color:#fff}
+    .unapplied-badge{width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;flex:0 0 28px;line-height:1;background:var(--blue);color:#fff;font-size:12px;padding:0;aspect-ratio:1/1}
+    .store-name{font-size:13px;color:#6e7888;font-weight:800;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.2;word-break:break-word}.store-line{min-width:0;margin-bottom:4px;padding-left:2px}
+    .item-title{font-size:16px;line-height:1.25;font-weight:900;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:break-word;padding-left:2px}
+    .deadline-wrap{display:flex;align-items:center;gap:6px}
+    .deadline-box{width:92px;border-radius:13px;padding:6px 7px;text-align:center;background:#fff;border:2px solid rgba(0,0,0,.08);color:var(--text)}
+    .deadline-box.soon{background:#ffd6a0;border-color:#f0a34a;color:var(--danger)}
+    .deadline-box.tomorrow{background:#ffd6a0;border-color:#f0a34a;color:var(--danger)}
+    .deadline-box.today{background:var(--danger);border-color:var(--danger);color:#fff}
+    .deadline-label{font-size:9px;font-weight:900;letter-spacing:.1em;color:var(--muted)}
+    .deadline-box.soon .deadline-label{color:var(--danger)}
+    .deadline-box.tomorrow .deadline-label{color:var(--danger)}
+    .deadline-box.today .deadline-label{color:#fff}
+    .deadline-date-row{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:2px}
+    .deadline-date{font-size:26px;line-height:1;font-weight:1000;letter-spacing:-.06em}
+    .weekday-badge{width:18px;height:18px;flex:0 0 18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid #cfd6e1;color:#657185;font-size:9px;font-weight:1000;line-height:1}
+    .weekday-badge.sat{color:#2474d8;border-color:#9fc2ee;background:#f4f9ff}
+    .weekday-badge.sun{color:#d93c4b;border-color:#efadb5;background:#fff7f8}
+    .deadline-box.today .weekday-badge{background:#fff;border-color:#fff}
+    .deadline-time{font-size:10px;font-weight:900;margin-top:3px}
+    .deadline-left{font-size:10px;font-weight:900;color:var(--danger);margin-top:2px}
+    .deadline-box.soon .deadline-left{color:var(--danger)}
+    .deadline-box.tomorrow .deadline-left{color:var(--danger)}
+    .deadline-box.today .deadline-left{color:#fff}
+    .chevron{font-size:18px;color:var(--muted);transition:transform .18s}
+    .lottery-row.open .chevron{transform:rotate(180deg)}
+    .details{display:none;padding:12px 12px 12px 18px;border-top:1px solid var(--line)}
+    .lottery-row.open .details{display:block}
+    .chip-row{display:flex;gap:6px;flex-wrap:wrap}
+    .small-chip{font-size:10px;padding:5px 7px;border:1px solid var(--line);background:#fff;color:var(--muted)}
+    .small-chip.warn{background:#fff8e9;color:#9a6a00;border-color:#f1dda4}
+    .small-chip.ok{background:#effaf5;color:#1f8d5e;border-color:#c8ead9}
+    .small-chip.mail{background:#eef6ff;color:#1769aa;border-color:#c9def5}
+    .small-chip.review{background:#fff0f2;color:#b73244;border-color:#f0c4cb}
+    .progress-box{margin-top:10px}
+    .progress-head{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px}
+    .progress-track{height:9px;background:#edf0f5;border-radius:999px;overflow:hidden}
+    .progress-bar{height:100%;border-radius:999px;background:var(--blue)}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+    .info-box{border:1px solid var(--line);border-radius:12px;padding:9px}
+    .info-label{font-size:10px;color:var(--muted);font-weight:800}
+    .info-value{font-size:12px;font-weight:900;margin-top:3px}
+    .link-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:10px}
+    .action-link{display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:11px;text-decoration:none;border:1px solid var(--line);background:#fff;color:var(--text);font-size:12px;font-weight:900;padding:8px;text-align:center;word-break:break-word}
+    .action-link.entry{background:var(--blue);color:#fff;border-color:var(--blue)}
+    .status-control-box{margin-top:11px;border-top:1px solid var(--line);padding-top:10px}
+    .status-control-label{font-size:11px;color:var(--muted);font-weight:900;margin-bottom:6px}
+    .status-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:7px}
+    .personal-note{margin-top:10px}
+    .personal-note textarea{min-height:72px}
+    .admin-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+    .add-card,.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:14px;box-shadow:0 2px 10px rgba(25,36,58,.03)}
+    .add-head,.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .add-head h3,.panel-head h3{font-size:14px;margin:0;font-weight:900}
+    .add-head p,.panel-head p{margin:3px 0 0;color:var(--muted);font-size:11px}
+    .add-body{display:none;margin-top:10px}
+    .add-card.open .add-body{display:block}
+    .helper{font-size:11px;color:var(--muted);margin:6px 0 0;line-height:1.55}
+    .preview{display:none;border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+    .preview.show{display:block}
+    .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .field{display:block}
+    .field.full{grid-column:1/-1}
+    .field>span{display:block;font-size:10px;color:var(--muted);font-weight:900;margin:0 0 5px}
+    .date-wrap{border:1px solid var(--line);border-radius:11px;padding:10px 11px;background:#fff}
+    .date-wrap input{width:100%;border:0;background:transparent;padding:0;min-width:0}
+    .link-editor{display:flex;flex-direction:column;gap:6px}
+    .link-row{display:grid;grid-template-columns:120px minmax(0,1fr) 38px;gap:6px}
+    .link-row input,.link-row select{min-width:0}
+    .link-remove{border:1px solid var(--line);background:#fff;border-radius:10px;font-weight:900;color:var(--danger)}
+    .table-list{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+    .member-row,.catalog-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px 10px}
+    .member-main,.catalog-main{min-width:0}
+    .member-email,.catalog-title{font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .member-meta,.catalog-meta{font-size:10px;color:var(--muted);margin-top:3px}
+    .member-actions{display:flex;gap:5px;align-items:center}
+    .member-actions select{width:110px;padding:7px 8px;font-size:11px}
+    .empty{padding:28px 12px;text-align:center;color:var(--muted);font-size:12px}
+    .archive-wrap{margin-top:14px}
+    .archive-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px 14px;font-weight:900;color:var(--text)}
+    .archive-toggle .left{display:flex;align-items:center;gap:8px}
+    .archive-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:#eef2f7;color:#445061;font-size:12px;font-weight:900}
+    .archive-body{display:none;margin-top:10px}
+    .archive-wrap.open .archive-body{display:block}
+    .archive-note{font-size:11px;color:var(--muted);margin:0 0 8px 2px}
+    .auth-shell{max-width:520px;margin:55px auto;padding:14px}
+    .auth-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
+    .auth-card h1{font-size:21px;margin:0 0 5px;font-weight:1000}
+    .auth-card p{font-size:12px;color:var(--muted);line-height:1.6}
+    .auth-grid{display:grid;gap:9px;margin-top:14px}
+    .auth-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .setup-box{border:1px solid var(--line);background:#fafbfc;border-radius:13px;padding:10px;margin-top:12px}
+    .setup-box code{font-size:10px;word-break:break-all}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(20,29,43,.45);display:none;align-items:flex-end;justify-content:center;padding:10px;z-index:50}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:14px;box-shadow:0 16px 50px rgba(0,0,0,.2)}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .modal-head h3{margin:0;font-size:15px;font-weight:900}
+    .modal-close{border:0;background:#f0f2f6;border-radius:999px;width:34px;height:34px;font-size:20px}
+    .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#1f2734;color:#fff;border-radius:999px;padding:10px 14px;font-size:12px;font-weight:800;transition:.2s;z-index:80;max-width:90vw;text-align:center}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .section-switch{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+    .section-switch button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:900}
+    .section-switch button.active{background:#1f2734;color:#fff;border-color:#1f2734}
+    .mail-connect-card{background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid #cfe0f6;border-radius:16px;padding:12px;margin-bottom:12px;box-shadow:0 2px 10px rgba(25,36,58,.03)}
+    .mail-connect-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .mail-connect-head h3{font-size:14px;margin:0;font-weight:1000}.mail-connect-head p{margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
+    .mail-status{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:1000;border:1px solid var(--line);white-space:nowrap}
+    .mail-status.connected{background:#effaf5;border-color:#bce5d0;color:#16895a}.mail-status.pending{background:#fff8e9;border-color:#efd99d;color:#946600}.mail-status.off{background:#f2f4f7;color:#697485}
+    .mail-address-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;margin-top:10px}.mail-address{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 11px;font-size:12px;font-weight:900;word-break:break-all;min-width:0}
+    .mail-connect-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.mail-connect-actions button{flex:1;min-width:130px}
+    .mail-verify-box{margin-top:9px;border:1px solid #efd99d;background:#fffaf0;border-radius:12px;padding:10px}.mail-verify-code{font-size:22px;font-weight:1000;letter-spacing:.08em;margin-top:4px}
+    .mail-event-list{display:flex;flex-direction:column;gap:6px;margin-top:9px}.mail-event-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:7px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:11px;padding:8px 9px}.mail-event-icon{font-size:17px}.mail-event-main{min-width:0}.mail-event-title{font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mail-event-meta{font-size:9px;color:var(--muted);margin-top:2px}.mail-event-time{font-size:9px;color:var(--muted);white-space:nowrap}
+    .copy-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:9px;word-break:break-all}
+    .step-list{counter-reset:step;display:flex;flex-direction:column;gap:8px;margin-top:10px}.step-item{position:relative;padding:10px 10px 10px 42px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:12px;line-height:1.6}.step-item:before{counter-increment:step;content:counter(step);position:absolute;left:10px;top:10px;width:23px;height:23px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font-size:11px;font-weight:1000}
+    @media(max-width:620px){
+      .summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+      .summary-card{padding:7px 5px;border-radius:12px}
+      .summary-label{font-size:14px;color:#38465a}
+      .summary-value{font-size:24px}
+      .search-row{grid-template-columns:minmax(0,1fr) 120px}
+      .field-grid{grid-template-columns:1fr}
+      .field.full{grid-column:auto}
+      .link-grid{grid-template-columns:1fr 1fr}
+      .link-row{grid-template-columns:100px minmax(0,1fr) 36px}
+      .header-title p{display:none}
+    }
+    @media(max-width:390px){
+      .app{padding-left:9px;padding-right:9px}
+      .summary-grid{gap:4px}
+      .summary-card{padding:6px 4px;border-radius:11px}
+      .summary-label{font-size:13px;color:#38465a}
+      .summary-value{font-size:21px}
+      .item-title{font-size:14px}
+      .deadline-box{width:82px}
+      .deadline-date{font-size:23px}
+      .brand-label{font-size:9px}
+      .search-row{grid-template-columns:1fr}
+      .link-grid{grid-template-columns:1fr}
+      .header-actions .badge.account{display:none}
+    }
+  </style>
+
+<script>(() => {
+  try {
+    localStorage.setItem("tom_lottery_supabase_config_v2", JSON.stringify({ url: "https://ofrkhysehruszttnqltt.supabase.co", key: "sb_publishable_SWsZkU8JSTP19E6tXBxpCg_6KiPgv4o" }));
+  } catch (e) {
+  }
+})();
+</script>
+<script src="./vendor/supabase-v2.112.3-compat.js?v=2.34.0"></script>
+<style id="tom-result-style-v251">
+.deadline-box.result-mode .deadline-label{font-size:0}
+.deadline-box.result-mode .deadline-label::after{content:'結果発表';font-size:9px;font-weight:900;letter-spacing:.04em}
+.deadline-box.result-missing{background:#fff7e8;border-color:#e1b949;color:#8a6500}
+.deadline-box.result-missing .deadline-left{color:#8a6500}
+.deadline-box.result-missing .deadline-date{font-size:18px;letter-spacing:0}
+</style>
+</head>
+<body>
+<div id="v234-ios-diag" style="position:fixed;left:8px;right:8px;top:8px;z-index:2147483647;background:#fff4c7;border:1px solid #e2c65e;border-radius:9px;padding:8px 10px;font:700 11px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:#665000">V2.35 iOS互換モード 起動中...</div>
+<script>(function(){var n=0,t=setInterval(function(){n++;var a=document.getElementById('app'),b=document.getElementById('authShell'),d=document.getElementById('v234-ios-diag');var ok=(a&&!a.classList.contains('hidden'))||(b&&!b.classList.contains('hidden'));if(ok){clearInterval(t);if(d)d.style.display='none';}else if(n>=20){clearInterval(t);if(d){d.textContent='V2.35: 画面初期化で停止しています。この表示をスクショしてください。';d.style.background='#fff0f0';d.style.borderColor='#e49a9a';d.style.color='#8c2222';}}},500);})();</script>
+
+  <div id="authShell" class="auth-shell">
+    <section class="auth-card">
+      <h1>TOM 応募・抽選マネージャー V2.51</h1>
+      <p>運営が抽選情報を一括更新し、各会員は自分だけの応募状況を管理する有料会員向け版です。</p>
+
+      <div id="modeChoice">
+        <div class="setup-box">
+          <strong>まず試す</strong>
+          <p>Supabase未接続でもデモモードで運営画面・会員画面を確認できます。</p>
+          <button class="primary-btn" id="startDemoBtn" style="width:100%">デモモードで開始</button>
+        </div>
+        <div class="setup-box">
+          <strong>本番DBへ接続</strong>
+          <p>Supabaseの Project URL と Publishable / anon key を設定します。service_role key は入力しないでください。</p>
+          <div class="auth-grid">
+            <input class="control" id="setupUrl" placeholder="https://xxxxx.supabase.co">
+            <input class="control" id="setupKey" placeholder="Publishable key / anon key">
+            <button class="soft-btn" id="saveSetupBtn">接続設定を保存</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="loginBox" class="hidden">
+        <div class="notice" id="connectionNotice"></div>
+        <div class="auth-grid">
+          <input class="control" id="loginEmail" type="email" placeholder="メールアドレス" autocomplete="email">
+          <input class="control" id="loginPassword" type="password" placeholder="パスワード" autocomplete="current-password">
+          <button class="primary-btn" id="loginBtn">ログイン</button>
+          <button class="soft-btn" id="signupBtn">新規登録</button>
+          <button class="soft-btn" id="backSetupBtn">接続設定へ戻る</button>
+        </div>
+        <p class="helper">新規登録した会員は「承認待ち」になります。運営が会員管理画面で「有効」にすると抽選一覧を利用できます。</p>
+      </div>
+    </section>
+  </div>
+
+  <main id="app" class="app hidden">
+    <header class="header">
+      <div class="header-title">
+        <h1>TOM エントリーマネージャー</h1>
+        <p>抽選・応募・限定受注・キャンペーンをまとめて管理</p>
+      </div>
+      <div class="header-actions">
+        <span class="badge demo" id="modeBadge">DEMO</span>
+        <span class="badge account" id="accountBadge">demo</span>
+        <button class="icon-btn" id="configBtn" title="接続設定">⚙</button>
+        <button class="icon-btn" id="logoutBtn" title="ログアウト">↪</button>
+      </div>
+    </header>
+
+    <div class="tabbar" id="roleTabs">
+      <button id="memberTabBtn" class="active">会員画面</button>
+      <button id="adminTabBtn">運営画面</button>
+    </div>
+
+    <div id="inactiveNotice" class="notice warn hidden">
+      このアカウントはまだ有料会員として有効化されていません。運営による承認後にエントリー一覧を利用できます。
+    </div>
+
+    <section id="memberView">
+      <section class="mail-connect-card" id="mailConnectCard">
+        <div class="mail-connect-head">
+          <div><h3>📩 メール連携</h3><p>抽選案内・応募完了・当選/落選・購入完了を自動で反映します。</p></div>
+          <span class="mail-status off" id="mailConnectStatus">未設定</span>
+        </div>
+        <div class="mail-address-row">
+          <div class="mail-address" id="mailForwardAddress">受信アドレス準備中</div>
+          <button class="soft-btn" id="copyMailAddressBtn">コピー</button>
+        </div>
+        <div class="mail-connect-actions">
+          <button class="primary-btn" id="openMailSetupBtn">初回設定をする</button>
+          <button class="soft-btn" id="refreshMailBtn">状態を更新</button>
+        </div>
+        <div id="mailVerifyInline" class="mail-verify-box hidden"></div>
+        <div id="mailLastReceived" class="helper"></div>
+        <div id="mailRecentWrap" class="hidden">
+          <div class="status-control-label" style="margin-top:10px">最近の自動処理</div>
+          <div class="mail-event-list" id="mailEventList"></div>
+        </div>
+      </section>
+
+      <section class="summary-grid" aria-label="集計">
+        <div class="summary-card"><div class="summary-label">管理中</div><div class="summary-value" id="countTotal">0</div></div>
+        <div class="summary-card"><div class="summary-label">未応募</div><div class="summary-value" id="countUnapplied">0</div></div>
+        <div class="summary-card"><div class="summary-label">3日以内</div><div class="summary-value" id="countSoon">0</div></div>
+        <div class="summary-card"><div class="summary-label">本日締切</div><div class="summary-value" id="countToday">0</div></div>
+        <div class="summary-card"><div class="summary-label">当選</div><div class="summary-value" id="countWon">0</div></div>
+      </section>
+
+      <section class="toolbar">
+        <div class="search-row">
+          <input class="control" id="searchInput" type="search" placeholder="店舗・商品を検索">
+          <select class="control" id="statusFilter" aria-label="状態で絞り込み">
+            <option value="all">すべて</option>
+            <option value="未応募">未応募</option>
+            <option value="結果待ち">結果待ち</option>
+            <option value="当選">当選</option>
+            <option value="購入済み">購入済み</option>
+            <option value="完了">完了</option>
+            <option value="落選">落選</option>
+          </select>
+        </div>
+        <div class="category-row" id="categoryFilters">
+          <button class="cat-filter active" data-cat="all">すべて</button>
+          <button class="cat-filter" data-cat="pokemon">POKÉMON</button>
+          <button class="cat-filter" data-cat="onepiece">ONE PIECE</button>
+          <button class="cat-filter" data-cat="dragonball">DRAGON BALL</button>
+          <button class="cat-filter" data-cat="other">OTHER / TOY</button>
+        </div>
+      </section>
+
+      <div class="list-head">
+        <h2>エントリー一覧</h2>
+        <select class="control sort-select" id="sortSelect">
+          <option value="deadline">締切が近い順</option>
+          <option value="newest">登録が新しい順</option>
+          <option value="store">店舗順</option>
+        </select>
+      </div>
+
+      <section class="lottery-list" id="lotteryList"></section>
+      <div class="empty" id="emptyState" hidden>該当するエントリーがありません。</div>
+
+      <section class="archive-wrap" id="archiveWrap">
+        <button class="archive-toggle" id="archiveToggle" type="button" aria-expanded="false">
+          <span class="left"><span>アーカイブ</span><span class="archive-count" id="archiveCount">0</span></span>
+          <span id="archiveChevron">⌄</span>
+        </button>
+        <div class="archive-body" id="archiveBody">
+          <p class="archive-note">完了・落選になった抽選はここに移動します。ステータスを変更すれば一覧へ戻せます。</p>
+          <section class="lottery-list" id="archiveList"></section>
+          <div class="empty" id="archiveEmpty" hidden>アーカイブはありません。</div>
+        </div>
+      </section>
+    </section>
+
+    <section id="adminView" class="hidden">
+      <div class="notice">
+        運営が編集するのは「抽選情報そのもの」です。会員の「未応募・結果待ち・当選」などの進捗は各会員の個別データとして保存され、抽選情報を編集しても保持されます。
+      </div>
+
+      <div class="section-switch">
+        <button class="active" data-admin-section="lotteries">エントリー管理</button>
+        <button data-admin-section="members">会員管理</button>
+        <button data-admin-section="catalog">商品マスタ</button>
+        <button data-admin-section="tools">移行・設定</button>
+      </div>
+
+      <div id="adminLotteries">
+        <section class="add-card" id="addCard">
+          <div class="add-head">
+            <div>
+              <h3>新しいエントリーを追加</h3>
+              <p>投稿文・案内文をそのまま貼り付けて解析</p>
+            </div>
+            <button class="primary-btn" id="toggleAddBtn">＋追加</button>
+          </div>
+          <div class="add-body">
+            <textarea class="control" id="sourceText" placeholder="抽選・全員サービス・限定受注・キャンペーン情報をここに貼り付けてください"></textarea>
+            <p class="helper">案件種別・主催/店舗・商品名・受付期間・締切・結果発表・支払・発送予定・URLを自動認識します。</p>
+            <p class="helper">解析できなかった項目は「未確認」で表示します。内容を確認してから登録してください。</p>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="primary-btn" id="analyzeBtn" style="flex:1">解析する</button>
+              <button class="soft-btn" id="clearSourceBtn">クリア</button>
+            </div>
+
+            <div class="preview" id="previewArea">
+              <div class="field-grid">
+                <label class="field"><span>店舗名</span><input class="control" id="pStore"></label>
+                <label class="field"><span>カテゴリ（複数可）</span>
+                  <div class="category-multi" id="pCategorySelector"></div>
+                </label>
+                <label class="field full"><span>タイトル</span><input class="control" id="pTitle"></label>
+                <label class="field"><span>受付開始日</span><div class="date-wrap"><input id="pStart" type="date"></div></label>
+                <label class="field"><span>締切日</span><div class="date-wrap"><input id="pDeadline" type="date"></div></label>
+                <label class="field"><span>締切時刻</span><input class="control" id="pDeadlineTime" type="time"></label>
+                <label class="field tom-preview-result-field"><span>結果発表日（抽選のみ）</span><div class="date-wrap"><input id="pResultDate" type="date"></div></label>
+                <label class="field tom-preview-result-field"><span>結果発表時刻</span><input class="control" id="pResultTime" type="time"></label>
+                <label class="field"><span>受取方法</span>
+                  <select class="control" id="pPickup">
+                    <option value="店舗受取">店舗受取</option>
+                    <option value="全国配送">全国配送</option>
+                    <option value="配送">配送</option>
+                    <option value="未確認">未確認</option>
+                  </select>
+                </label>
+                <label class="field"><span>応募方法</span>
+                  <select class="control" id="pApplyMethod">
+                    <option value="Web">Webフォーム</option>
+                    <option value="アプリ">アプリ</option>
+                    <option value="店頭">店頭</option>
+                    <option value="その他">その他</option>
+                    <option value="未確認">未確認</option>
+                  </select>
+                </label>
+                <label class="field"><span>会員登録</span>
+                  <select class="control" id="pMembership">
+                    <option value="required">必要</option>
+                    <option value="not_required">不要 / 記載なし</option>
+                  </select>
+                </label>
+                <label class="field full"><span>会員条件表示</span><input class="control" id="pMembershipLabel" placeholder="例：アプリ会員限定"></label>
+                <label class="field full"><span>応募条件</span><input class="control" id="pExtraRequirement" placeholder="例：プレイヤーID必須"></label>
+                <label class="field full"><span>メモ</span><textarea class="control" id="pNote" style="min-height:80px"></textarea></label>
+                <div class="field full">
+                  <span>リンク</span>
+                  <div class="link-editor" id="pLinks"></div>
+                  <button class="soft-btn" id="addLinkBtn" style="margin-top:7px">＋リンク追加</button>
+                </div>
+              </div>
+              <button class="primary-btn" id="savePreviewBtn" style="width:100%;margin-top:12px">全会員向けに登録</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="list-head">
+          <h2>運営登録済みエントリー</h2>
+          <span class="badge" id="adminLotteryCount">0件</span>
+        </div>
+        <section class="lottery-list" id="adminLotteryList"></section>
+      </div>
+
+      <div id="adminMembers" class="hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h3>会員管理</h3><p>支払い確認後に「有効」へ変更</p></div>
+            <button class="soft-btn" id="refreshMembersBtn">更新</button>
+          </div>
+          <div class="table-list" id="memberList"></div>
+          <div class="empty" id="memberEmpty" hidden>会員データがありません。</div>
+        </section>
+      </div>
+
+      <div id="adminCatalog" class="hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h3>商品マスタ</h3><p>商品名からカテゴリとタイトルを自動認識</p></div>
+          </div>
+          <div class="field-grid" style="margin-top:10px">
+            <label class="field"><span>カテゴリ</span>
+              <select class="control" id="catalogCategory">
+                <option value="pokemon">POKÉMON</option>
+                <option value="onepiece">ONE PIECE</option>
+                <option value="dragonball">DRAGON BALL</option>
+                <option value="other">OTHER / TOY</option>
+              </select>
+            </label>
+            <label class="field"><span>発売日</span><div class="date-wrap"><input id="catalogRelease" type="date"></div></label>
+            <label class="field full"><span>商品名</span><input class="control" id="catalogName" placeholder="例：決戦の刻"></label>
+            <label class="field full"><span>別名・型番（カンマ区切り）</span><input class="control" id="catalogAliases" placeholder="OP-16, OP16"></label>
+          </div>
+          <button class="primary-btn" id="addCatalogBtn" style="width:100%;margin-top:9px">商品マスタに追加</button>
+          <div class="table-list" id="catalogList"></div>
+        </section>
+      </div>
+
+      <div id="adminTools" class="hidden">
+        <section class="panel">
+          <div class="panel-head"><div><h3>V1から移行</h3><p>現在の端末に残っているV1データを取り込み</p></div></div>
+          <p class="helper">デモモードではV2初回起動時に自動移行します。本番DBでは、運営ログイン後にこのボタンで既存V1抽選を共通DBへ登録できます。</p>
+          <button class="soft-btn" id="migrateV1Btn" style="width:100%;margin-top:8px">V1ローカルデータを取り込む</button>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h3>会員メール自動連携</h3><p>専用転送アドレス → Cloudflare Email Worker → Supabase</p></div></div>
+          <p class="helper">会員ごとに専用受信アドレスを自動発行します。会員はGmail側で一度だけ転送設定を行い、その後は抽選案内・応募完了・当落・購入完了を本人のデータへ自動反映します。</p>
+          <div class="field-grid" style="margin-top:10px">
+            <label class="field full"><span>受信用ドメイン（公開情報）</span><input class="control" id="mailDomainSetting" placeholder="例：mail.tom-lottery.jp"></label>
+          </div>
+          <button class="soft-btn" id="saveMailDomainBtn" style="width:100%;margin-top:8px">受信用ドメインを保存</button>
+          <div class="notice" style="margin-top:9px">service_role key はブラウザに保存しません。Cloudflare WorkerのSecretだけに保存します。運営画面から他会員のメール本文・専用アドレス・当落履歴は閲覧できません。</div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h3>接続設定</h3><p>Supabase Project URL / Publishable key</p></div></div>
+          <button class="soft-btn" id="openConfigFromTools" style="width:100%;margin-top:8px">接続設定を開く</button>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="mailSetupBackdrop" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head"><h3>📩 Gmailメール連携</h3><button class="modal-close" id="closeMailSetupBtn">×</button></div>
+      <div class="notice">初回だけの設定です。設定後は対象メールが届くたびに抽選管理へ自動反映されます。</div>
+      <div class="step-list">
+        <div class="step-item">下の「専用転送アドレス」をコピーします。<div class="copy-code" id="mailSetupAddress" style="margin-top:7px"></div><button class="soft-btn" id="copyMailAddressModalBtn" style="width:100%;margin-top:7px">アドレスをコピー</button></div>
+        <div class="step-item">Gmail → 設定 →「メール転送とPOP/IMAP」→「転送先アドレスを追加」に専用アドレスを貼り付けます。</div>
+        <div class="step-item">Gmailから確認メールが届くと、この画面に確認コード/確認リンクが自動表示されます。表示後にGmail側で確認を完了します。<div id="mailSetupVerification" class="mail-verify-box" style="margin-top:7px">確認メール待ち</div></div>
+        <div class="step-item">対象ショップだけを自動転送するフィルターを作ります。最初はJoshin・ポケモンセンター・LivePocket・タカラトミーを対象にします。<div class="copy-code" id="mailFilterQuery" style="margin-top:7px"></div><button class="soft-btn" id="copyMailFilterBtn" style="width:100%;margin-top:7px">フィルター条件をコピー</button></div>
+      </div>
+      <button class="primary-btn" id="refreshMailModalBtn" style="width:100%;margin-top:12px">受信状態を更新</button>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="editBackdrop" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h3>エントリー情報を編集（運営共通）</h3>
+        <button class="modal-close" id="closeEditBtn">×</button>
+      </div>
+      <div class="field-grid">
+        <label class="field"><span>案件種別（変更可）</span>
+          <select class="control" id="eOpportunityType">
+            <option value="lottery">🎯 抽選</option>
+            <option value="all_applicants">🎁 応募者全員サービス</option>
+            <option value="preorder">🛒 期間限定受注</option>
+            <option value="campaign">🎫 キャンペーン</option>
+          </select>
+        </label>
+        <div class="field" id="eOpportunityTypeHint"><span>種別設定</span><div class="helper" style="margin-top:7px">自動判定後でも、ここで手動変更できます。</div></div>
+        <div class="field full" id="eOpportunityExtraFields">
+          <div class="field-grid">
+            <label class="field"><span>支払タイミング</span>
+              <select class="control" id="ePaymentTiming">
+                <option value="unknown">未確認</option>
+                <option value="application">応募・注文時に支払</option>
+                <option value="after_application">応募・注文後に支払</option>
+                <option value="cod">商品到着時（代引）</option>
+                <option value="free">無料</option>
+              </select>
+            </label>
+            <label class="field"><span>負担金・商品代金（円）</span><input class="control" id="ePaymentAmount" type="number" min="0" inputmode="numeric" placeholder="未確認"></label>
+            <label class="field full"><span>発送・お届け予定</span><input class="control" id="eShippingEstimate" placeholder="例：12月頃 / 応募後2〜3か月"></label>
+          </div>
+        </div>
+        <label class="field"><span>店舗名</span><input class="control" id="eStore"></label>
+        <label class="field"><span>カテゴリ（複数可）</span>
+          <div class="category-multi" id="eCategorySelector"></div>
+        </label>
+        <label class="field full"><span>タイトル</span><input class="control" id="eTitle"></label>
+        <label class="field"><span>受付開始日</span><div class="date-wrap"><input id="eStart" type="date"></div></label>
+        <label class="field"><span>締切日</span><div class="date-wrap"><input id="eDeadline" type="date"></div></label>
+        <label class="field"><span>締切時刻</span><input class="control" id="eDeadlineTime" type="time"></label>
+        <label class="field tom-edit-result-field"><span>結果発表日（抽選のみ）</span><div class="date-wrap"><input id="eResultDate" type="date"></div></label>
+        <label class="field tom-edit-result-field"><span>結果発表時刻</span><input class="control" id="eResultTime" type="time"></label>
+        <label class="field"><span>受取方法</span>
+          <select class="control" id="ePickup"><option>店舗受取</option><option>全国配送</option><option>配送</option><option>未確認</option></select>
+        </label>
+        <label class="field"><span>応募方法</span>
+          <select class="control" id="eApplyMethod"><option>Web</option><option>アプリ</option><option>店頭</option><option>その他</option><option>未確認</option></select>
+        </label>
+        <label class="field"><span>会員登録</span>
+          <select class="control" id="eMembership"><option value="required">必要</option><option value="not_required">不要 / 記載なし</option></select>
+        </label>
+        <label class="field full"><span>会員条件表示</span><input class="control" id="eMembershipLabel" placeholder="例：アプリ会員限定"></label>
+        <label class="field full"><span>応募条件</span><input class="control" id="eExtraRequirement" placeholder="例：プレイヤーID必須"></label>
+        <label class="field full"><span>メモ</span><textarea class="control" id="eNote" style="min-height:80px"></textarea></label>
+        <div class="field full"><span>リンク</span><div class="link-editor" id="eLinks"></div><button class="soft-btn" id="editAddLinkBtn" style="margin-top:7px">＋リンク追加</button></div>
+      </div>
+      <button class="primary-btn" id="saveEditBtn" style="width:100%;margin-top:12px">変更を全会員へ反映</button>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="configBackdrop" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head"><h3>Supabase接続設定</h3><button class="modal-close" id="closeConfigBtn">×</button></div>
+      <div class="field-grid">
+        <label class="field full"><span>Project URL</span><input class="control" id="configUrl" placeholder="https://xxxxx.supabase.co"></label>
+        <label class="field full"><span>Publishable / anon key</span><input class="control" id="configKey" placeholder="公開用キー"></label>
+      </div>
+      <p class="helper">ブラウザ側には公開用キーのみ設定します。service_role key は絶対に使用しません。</p>
+      <div class="auth-row" style="margin-top:10px">
+        <button class="primary-btn" id="saveConfigBtn">保存して再読込</button>
+        <button class="danger-btn" id="clearConfigBtn">設定を削除</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>(() => {
+  const CONFIG_KEY = "tom_lottery_supabase_config_v2";
+  const DEMO_GLOBAL_KEY = "tom_lottery_v2_global";
+  const DEMO_PROGRESS_KEY = "tom_lottery_v2_progress_member";
+  const DEMO_CATALOG_KEY = "tom_lottery_v2_catalog";
+  const DEMO_PROFILES_KEY = "tom_lottery_v2_profiles";
+  const V1_KEY = "tom_lottery_manager_v1";
+  const STATUS_FLOW = ["\u672A\u5FDC\u52DF", "\u7D50\u679C\u5F85\u3061", "\u5F53\u9078", "\u8CFC\u5165\u6E08\u307F", "\u5B8C\u4E86"];
+  const STATUS_OPTIONS = ["\u672A\u5FDC\u52DF", "\u7D50\u679C\u5F85\u3061", "\u5F53\u9078", "\u8CFC\u5165\u6E08\u307F", "\u5B8C\u4E86", "\u843D\u9078"];
+  const TERMINAL_STATUSES = ["\u5B8C\u4E86", "\u843D\u9078"];
+  const $ = (id) => document.getElementById(id);
+  let mode = "none";
+  let supabase = null;
+  let session = null;
+  let profile = null;
+  let roleView = "member";
+  let adminSection = "lotteries";
+  let activeCategory = "all";
+  let openId = null;
+  let archiveOpen = false;
+  let editingId = null;
+  let previewLinks = [];
+  let editLinks = [];
+  let lotteries = [];
+  let progressMap = /* @__PURE__ */ new Map();
+  let catalog = [];
+  let profiles = [];
+  let realtimeChannel = null;
+  let mailboxAlias = null;
+  let mailEvents = [];
+  let publicSettings = { mail_domain: "" };
+  const BUILTIN_CATALOG = [
+    { category: "pokemon", name: "\u30E1\u30AC\u30D6\u30EC\u30A4\u30D6", release_date: "2025-08-01", aliases: ["\u30E1\u30AC\u30D6\u30EC\u30A4\u30D6"] },
+    { category: "pokemon", name: "\u30E1\u30AC\u30B7\u30F3\u30D5\u30A9\u30CB\u30A2", release_date: "2025-08-01", aliases: ["\u30E1\u30AC\u30B7\u30F3\u30D5\u30A9\u30CB\u30A2"] },
+    { category: "pokemon", name: "\u30D7\u30EC\u30DF\u30A2\u30E0\u30C8\u30EC\u30FC\u30CA\u30FC\u30DC\u30C3\u30AF\u30B9 MEGA", release_date: "2025-08-01", aliases: ["\u30D7\u30EC\u30DF\u30A2\u30E0\u30C8\u30EC\u30FC\u30CA\u30FC\u30DC\u30C3\u30AF\u30B9 MEGA", "\u30D7\u30EC\u30DF\u30A2\u30E0\u30C8\u30EC\u30FC\u30CA\u30FC\u30DC\u30C3\u30AF\u30B9MEGA"] },
+    { category: "pokemon", name: "\u30A4\u30F3\u30D5\u30A7\u30EB\u30CEX", release_date: "2025-09-26", aliases: ["\u30A4\u30F3\u30D5\u30A7\u30EB\u30CEX", "\u30A4\u30F3\u30D5\u30A7\u30EB\u30CE\u30A8\u30C3\u30AF\u30B9"] },
+    { category: "pokemon", name: "MEGA\u30C9\u30EA\u30FC\u30E0ex", release_date: "2025-11-28", aliases: ["MEGA\u30C9\u30EA\u30FC\u30E0ex", "MEGA\u30C9\u30EA\u30FC\u30E0EX", "\u30E1\u30AC\u30C9\u30EA\u30FC\u30E0ex"] },
+    { category: "pokemon", name: "\u30E0\u30CB\u30AD\u30B9\u30BC\u30ED", release_date: "2026-01-23", aliases: ["\u30E0\u30CB\u30AD\u30B9\u30BC\u30ED"] },
+    { category: "pokemon", name: "\u30CB\u30F3\u30B8\u30E3\u30B9\u30D4\u30CA\u30FC", release_date: "2026-03-13", aliases: ["\u30CB\u30F3\u30B8\u30E3\u30B9\u30D4\u30CA\u30FC"] },
+    { category: "pokemon", name: "\u30A2\u30D3\u30B9\u30A2\u30A4", release_date: "2026-05-22", aliases: ["\u30A2\u30D3\u30B9\u30A2\u30A4"] },
+    { category: "pokemon", name: "\u30B9\u30C8\u30FC\u30E0\u30A8\u30E1\u30E9\u30EB\u30C0", release_date: "2026-07-31", aliases: ["\u30B9\u30C8\u30FC\u30E0\u30A8\u30E1\u30E9\u30EB\u30C0"] },
+    { category: "pokemon", name: "30th CELEBRATION", release_date: "2026-09-16", aliases: ["30th CELEBRATION", "30TH CELEBRATION"] },
+    { category: "pokemon", name: "30th CELEBRATION \u30D7\u30EC\u30DF\u30A2\u30E0\u30C7\u30C3\u30AD\u30BB\u30C3\u30C8 \u30A8\u30FC\u30D5\u30A3\u30FB\u30D6\u30E9\u30C3\u30AD\u30FC", release_date: "2026-09-16", aliases: ["\u30D7\u30EC\u30DF\u30A2\u30E0\u30C7\u30C3\u30AD\u30BB\u30C3\u30C8 \u30A8\u30FC\u30D5\u30A3\u30FB\u30D6\u30E9\u30C3\u30AD\u30FC", "\u30D7\u30EC\u30DF\u30A2\u30E0\u30C7\u30C3\u30AD\u30BB\u30C3\u30C8\u30A8\u30FC\u30D5\u30A3\u30FB\u30D6\u30E9\u30C3\u30AD\u30FC"] },
+    { category: "pokemon", name: "30th CELEBRATION FUTURISTIC BOX", release_date: "2026-09-16", aliases: ["30th CELEBRATION FUTURISTIC BOX", "FUTURISTIC BOX"] },
+    { category: "pokemon", name: "30th CELEBRATION \u30AB\u30FC\u30C9\u30BB\u30C3\u30C8", release_date: "2026-10-16", aliases: ["30th CELEBRATION \u30AB\u30FC\u30C9\u30BB\u30C3\u30C8", "30th CELEBRATION\u30AB\u30FC\u30C9\u30BB\u30C3\u30C8"] },
+    { category: "onepiece", name: "\u53D7\u3051\u7D99\u304C\u308C\u308B\u610F\u5FD7", release_date: "2025-08-23", aliases: ["\u53D7\u3051\u7D99\u304C\u308C\u308B\u610F\u5FD7", "OP-13", "OP13"] },
+    { category: "onepiece", name: "ONE PIECE Heroines Edition", release_date: "2025-10-25", aliases: ["ONE PIECE Heroines Edition", "HEROINES EDITION", "EB-03", "EB03"] },
+    { category: "onepiece", name: "\u84BC\u6D77\u306E\u4E03\u5091", release_date: "2025-11-22", aliases: ["\u84BC\u6D77\u306E\u4E03\u5091", "OP-14", "OP14"] },
+    { category: "onepiece", name: "EGGHEAD CRISIS", release_date: "2026-01-31", aliases: ["EGGHEAD CRISIS", "\u30A8\u30C3\u30B0\u30D8\u30C3\u30C9\u30AF\u30E9\u30A4\u30B7\u30B9", "EB-04", "EB04"] },
+    { category: "onepiece", name: "\u795E\u306E\u5CF6\u306E\u5192\u967A", release_date: "2026-02-28", aliases: ["\u795E\u306E\u5CF6\u306E\u5192\u967A", "OP-15", "OP15"] },
+    { category: "onepiece", name: "\u6C7A\u6226\u306E\u523B", release_date: "2026-05-30", aliases: ["\u6C7A\u6226\u306E\u523B", "OP-16", "OP16"] },
+    { category: "onepiece", name: "\u4E16\u754C\u6700\u5F37\u306E\u6226\u58EB", release_date: "2026-08-22", aliases: ["\u4E16\u754C\u6700\u5F37\u306E\u6226\u58EB", "OP-17", "OP17"] },
+    { category: "onepiece", name: "ONE PIECE Heroines Edition vol.2", release_date: "2026-10-01", aliases: ["ONE PIECE Heroines Edition vol.2", "HEROINES EDITION VOL.2", "Heroines Edition vol.2", "EB-05", "EB05"] },
+    { category: "dragonball", name: "DRAGON BALL SUPER DIVERS", release_date: null, aliases: ["DRAGON BALL SUPER DIVERS", "\u30C9\u30E9\u30B4\u30F3\u30DC\u30FC\u30EB\u30B9\u30FC\u30D1\u30FC\u30C0\u30A4\u30D0\u30FC\u30BA", "\u30B9\u30FC\u30D1\u30FC\u30C0\u30A4\u30D0\u30FC\u30BA"] },
+    { category: "other", name: "BEYBLADE X", release_date: null, aliases: ["BEYBLADE X", "\u30D9\u30A4\u30D6\u30EC\u30FC\u30C9X", "\u30D9\u30A4\u30D6\u30EC\u30FC\u30C9 X"] }
+  ];
+  const DEMO_LOTTERIES = [
+    { id: rid(), store: "\u4E09\u6D0B\u5802", category: "pokemon", categories: ["pokemon"], title: "30th CELEBRATION / \u30D7\u30EC\u30DF\u30A2\u30E0\u30C7\u30C3\u30AD\u30BB\u30C3\u30C8 \u30A8\u30FC\u30D5\u30A3\u30FB\u30D6\u30E9\u30C3\u30AD\u30FC", start_date: "2026-08-19", deadline_date: "2026-09-01", deadline_time: null, fulfillment: "\u5E97\u8217\u53D7\u53D6", application_method: "Web", membership_required: true, membership_label: "\u4F1A\u54E1\u767B\u9332\u304C\u5FC5\u8981", extra_requirement: "", note: "\u4E09\u6D0B\u5802\u306E\u30C8\u30EC\u30AB\u53D6\u6271\u5E97\u8217\u3067\u53D7\u3051\u53D6\u308A", is_active: true, created_at: (/* @__PURE__ */ new Date()).toISOString(), links: [
+      { label: "\u30C8\u30EC\u30AB\u53D6\u6271\u5E97\u8217", url: "https://x.gd/UejXq", type: "store", sort_order: 1 },
+      { label: "\u4F1A\u54E1\u767B\u9332", url: "https://x.gd/ItBTK", type: "member", sort_order: 2 },
+      { label: "30th CELEBRATION \u5FDC\u52DF", url: "https://x.gd/6AFC9", type: "entry", sort_order: 3 },
+      { label: "\u30D7\u30EC\u30DF\u30A2\u30E0\u30C7\u30C3\u30AD\u30BB\u30C3\u30C8 \u5FDC\u52DF", url: "https://x.gd/c7I0o", type: "entry", sort_order: 4 }
+    ] },
+    { id: rid(), store: "\u30E4\u30DE\u30B7\u30ED\u30E4", category: "onepiece", categories: ["onepiece"], title: "\u6C7A\u6226\u306E\u523B / \u795E\u306E\u5CF6\u306E\u5192\u967A", start_date: "2026-08-19", deadline_date: "2026-08-21", deadline_time: "21:30", fulfillment: "\u5168\u56FD\u914D\u9001", application_method: "Web", membership_required: true, membership_label: "\u4F1A\u54E1\u767B\u9332\u304C\u5FC5\u8981", extra_requirement: "", note: "\u5168\u56FD\u914D\u9001", is_active: true, created_at: (/* @__PURE__ */ new Date()).toISOString(), links: [
+      { label: "\u4F1A\u54E1\u767B\u9332", url: "https://x.gd/MQSrs", type: "member", sort_order: 1 },
+      { label: "\u5FDC\u52DF\u30D5\u30A9\u30FC\u30E0", url: "https://x.gd/HlTNC", type: "entry", sort_order: 2 }
+    ] }
+  ];
+  function rid() {
+    var _a;
+    return ((_a = crypto.randomUUID) == null ? void 0 : _a.call(crypto)) || "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  }
+  function esc(v) {
+    return String(v != null ? v : "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  }
+  function todayJST() {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(/* @__PURE__ */ new Date());
+    const o = {};
+    parts.forEach((p) => o[p.type] = p.value);
+    return "".concat(o.year, "-").concat(o.month, "-").concat(o.day);
+  }
+  function dateObj(s) {
+    if (!s) return null;
+    return new Date("".concat(s, "T00:00:00+09:00"));
+  }
+  function dayDiff(s) {
+    const t = dateObj(todayJST()), d = dateObj(s);
+    return t && d ? Math.round((d - t) / 864e5) : 99999;
+  }
+  function fmtDate(s) {
+    if (!s) return "-";
+    const [y, m, d] = s.split("-");
+    return "".concat(Number(m), "/").concat(Number(d));
+  }
+  function weekdayInfo(s) {
+    if (!s) return { label: "", cls: "" };
+    const d = dateObj(s);
+    if (!d) return { label: "", cls: "" };
+    const labels = ["\u65E5", "\u6708", "\u706B", "\u6C34", "\u6728", "\u91D1", "\u571F"];
+    const n = d.getDay();
+    return { label: labels[n], cls: n === 0 ? "sun" : n === 6 ? "sat" : "" };
+  }
+  function brandLabel(cat) {
+    return cat === "pokemon" ? "POK\xC9MON" : cat === "onepiece" ? "ONE PIECE" : cat === "dragonball" ? "DRAGON BALL" : "OTHER / TOY";
+  }
+  function fulfillmentLabel(item) {
+    if ((item.fulfillment || "") === "\u914D\u9001" && /全国配送/.test(item.note || "")) return "\u5168\u56FD\u914D\u9001";
+    return item.fulfillment || "\u672A\u78BA\u8A8D";
+  }
+  function cleanDisplayNote(note) {
+    return String(note || "").split(" / ").filter((x) => x && !/^商品DB認識[:：]/.test(x.trim())).join(" / ");
+  }
+  function categoryVar(cat) {
+    return cat === "pokemon" ? "var(--pokemon)" : cat === "onepiece" ? "var(--onepiece)" : cat === "dragonball" ? "var(--dragonball)" : "var(--other)";
+  }
+  function itemCategories(item) {
+    const arr = Array.isArray(item == null ? void 0 : item.categories) && item.categories.length ? item.categories : [(item == null ? void 0 : item.category) || "other"];
+    return [...new Set(arr.filter(Boolean))];
+  }
+  function primaryCategory(item) {
+    return itemCategories(item)[0] || "other";
+  }
+  function hasCategory(item, cat) {
+    return itemCategories(item).includes(cat);
+  }
+  function renderCategorySelector(rootId, selected = []) {
+    const root = $(rootId);
+    if (!root) return;
+    const active = [...new Set((selected && selected.length ? selected : ["other"]).filter(Boolean))];
+    root.innerHTML = ["pokemon", "onepiece", "dragonball", "other"].map((cat) => '<button type="button" class="category-choice '.concat(active.includes(cat) ? "active" : "", '" data-choice-root="').concat(rootId, '" data-value="').concat(cat, '">').concat(brandLabel(cat), "</button>")).join("");
+    root.querySelectorAll("[data-choice-root]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.classList.toggle("active");
+        if (!root.querySelector(".category-choice.active")) btn.classList.add("active");
+      });
+    });
+  }
+  function getCategorySelection(rootId) {
+    const root = $(rootId);
+    if (!root) return ["other"];
+    const vals = [...root.querySelectorAll(".category-choice.active")].map((x) => x.dataset.value).filter(Boolean);
+    return vals.length ? vals : ["other"];
+  }
+  function normalizeStatus(s) {
+    if (s === "\u53D7\u53D6\u6E08\u307F") return "\u5B8C\u4E86";
+    return s || "\u672A\u5FDC\u52DF";
+  }
+  function statusProgress(s) {
+    return { "\u672A\u5FDC\u52DF": 0, "\u7D50\u679C\u5F85\u3061": 42, "\u5F53\u9078": 72, "\u8CFC\u5165\u6E08\u307F": 88, "\u5B8C\u4E86": 100, "\u843D\u9078": 100 }[normalizeStatus(s)] || 0;
+  }
+  function getProgress(id) {
+    const raw = progressMap.get(id) || { status: "\u672A\u5FDC\u52DF", membership_done: false, memo: "" };
+    return { ...raw, status: normalizeStatus(raw.status) };
+  }
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove("show"), 1900);
+  }
+  function currentIsAdmin() {
+    return mode === "demo" ? (profile == null ? void 0 : profile.role) === "admin" : (profile == null ? void 0 : profile.role) === "admin";
+  }
+  function currentIsActive() {
+    return mode === "demo" ? true : (profile == null ? void 0 : profile.membership_status) === "active" || (profile == null ? void 0 : profile.role) === "admin";
+  }
+  function cleanTime(t) {
+    return t ? String(t).slice(0, 5) : "";
+  }
+  function loadConfig() {
+    try {
+      return JSON.parse(localStorage.getItem(CONFIG_KEY) || "null");
+    } catch {
+      return null;
+    }
+  }
+  function saveConfig(url, key) {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify({ url: url.trim().replace(/\/$/, ""), key: key.trim() }));
+  }
+  function showAuth(modeName = "choice") {
+    $("authShell").classList.remove("hidden");
+    $("app").classList.add("hidden");
+    $("modeChoice").classList.toggle("hidden", modeName !== "choice");
+    $("loginBox").classList.toggle("hidden", modeName !== "login");
+  }
+  function showApp() {
+    $("authShell").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("modeBadge").textContent = mode === "cloud" ? "CLOUD" : "DEMO";
+    $("modeBadge").className = "badge " + (mode === "cloud" ? "cloud" : "demo");
+    $("accountBadge").textContent = (profile == null ? void 0 : profile.email) || (profile == null ? void 0 : profile.display_name) || "demo";
+    $("adminTabBtn").classList.toggle("hidden", !currentIsAdmin());
+    if (!currentIsAdmin() && roleView === "admin") roleView = "member";
+    renderAll();
+  }
+  async function init() {
+    const cfg = loadConfig();
+    if (!cfg) {
+      showAuth("choice");
+      return;
+    }
+    try {
+      const { createClient } = window.__TOM_SUPABASE__;
+      supabase = createClient(cfg.url, cfg.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+      mode = "cloud";
+      const { data: { session: s } } = await supabase.auth.getSession();
+      if (!s) {
+        $("connectionNotice").textContent = "Supabase\u63A5\u7D9A\u8A2D\u5B9A\u6E08\u307F\u3002\u30E1\u30FC\u30EB\u30A2\u30C9\u30EC\u30B9\u3068\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u30ED\u30B0\u30A4\u30F3\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+        showAuth("login");
+        return;
+      }
+      session = s;
+      await loadCloudProfile();
+      await loadAllData();
+      setupRealtime();
+      showApp();
+    } catch (e) {
+      console.error(e);
+      $("connectionNotice").textContent = "\u63A5\u7D9A\u8A2D\u5B9A\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+      showAuth("login");
+    }
+  }
+  function initDemo() {
+    mode = "demo";
+    session = { user: { id: "demo-member", email: "member@demo.local" } };
+    const role = localStorage.getItem("tom_lottery_v2_demo_role") || "admin";
+    profile = { id: "demo-member", email: role === "admin" ? "admin@demo.local" : "member@demo.local", role, membership_status: "active", display_name: role === "admin" ? "\u904B\u55B6\u30C7\u30E2" : "\u4F1A\u54E1\u30C7\u30E2", mail_connection_status: "connected", mail_last_received_at: (/* @__PURE__ */ new Date()).toISOString() };
+    migrateV1ToDemoIfNeeded();
+    loadDemoData();
+    showApp();
+  }
+  function migrateV1ToDemoIfNeeded() {
+    if (localStorage.getItem(DEMO_GLOBAL_KEY)) return;
+    let migrated = [];
+    let progress = {};
+    try {
+      const old = JSON.parse(localStorage.getItem(V1_KEY) || "[]");
+      if (Array.isArray(old) && old.length) {
+        migrated = old.map((x) => ({
+          id: x.id || rid(),
+          store: x.store || "\u5E97\u8217\u672A\u8A2D\u5B9A",
+          category: x.category || "other",
+          title: x.title || "\u62BD\u9078\u5546\u54C1",
+          start_date: x.start || x.start_date || null,
+          deadline_date: x.deadline || x.deadline_date || todayJST(),
+          deadline_time: x.deadlineTime || x.deadline_time || null,
+          fulfillment: x.pickup || x.fulfillment || "\u672A\u78BA\u8A8D",
+          application_method: x.application_method || "Web",
+          membership_required: x.membership === "required" || x.membership_required === true,
+          membership_label: x.membership_label || "",
+          extra_requirement: x.extra_requirement || "",
+          note: x.note || "",
+          is_active: true,
+          created_at: new Date(x.createdAt || Date.now()).toISOString(),
+          links: (x.links || []).map((l, i) => ({ label: l.label || "\u30EA\u30F3\u30AF", url: l.url || "", type: l.type || "detail", sort_order: i + 1 }))
+        }));
+        old.forEach((x) => {
+          progress[x.id] = { status: x.status || "\u672A\u5FDC\u52DF", membership_done: !!x.membershipDone, memo: "" };
+        });
+      }
+    } catch {
+    }
+    if (!migrated.length) migrated = DEMO_LOTTERIES;
+    localStorage.setItem(DEMO_GLOBAL_KEY, JSON.stringify(migrated));
+    localStorage.setItem(DEMO_PROGRESS_KEY, JSON.stringify(progress));
+    if (!localStorage.getItem(DEMO_CATALOG_KEY)) localStorage.setItem(DEMO_CATALOG_KEY, JSON.stringify(BUILTIN_CATALOG));
+    if (!localStorage.getItem(DEMO_PROFILES_KEY)) {
+      localStorage.setItem(DEMO_PROFILES_KEY, JSON.stringify([
+        { id: "demo-admin", email: "admin@demo.local", display_name: "\u904B\u55B6\u30C7\u30E2", role: "admin", membership_status: "active" },
+        { id: "demo-member", email: "member@demo.local", display_name: "\u4F1A\u54E1\u30C7\u30E2", role: "member", membership_status: "active" }
+      ]));
+    }
+  }
+  function loadDemoData() {
+    lotteries = JSON.parse(localStorage.getItem(DEMO_GLOBAL_KEY) || "[]");
+    const p = JSON.parse(localStorage.getItem(DEMO_PROGRESS_KEY) || "{}");
+    progressMap = new Map(Object.entries(p));
+    catalog = JSON.parse(localStorage.getItem(DEMO_CATALOG_KEY) || "[]");
+    profiles = JSON.parse(localStorage.getItem(DEMO_PROFILES_KEY) || "[]");
+    publicSettings = { mail_domain: "mail.demo.tom-lottery.jp" };
+    mailboxAlias = { id: "demo-mailbox", user_id: "demo-member", alias_token: "a8f3c21d9b77", connection_status: "connected", verification_code: null, verification_url: null, last_received_at: (/* @__PURE__ */ new Date()).toISOString(), is_enabled: true };
+    mailEvents = [
+      { id: "mail-demo-1", event_type: "result_win", subject: "\u62BD\u9078\u7D50\u679C\u306E\u304A\u77E5\u3089\u305B", store: "\u30DD\u30B1\u30E2\u30F3\u30BB\u30F3\u30BF\u30FC\u30AA\u30F3\u30E9\u30A4\u30F3", title: "30th CELEBRATION", received_at: (/* @__PURE__ */ new Date()).toISOString(), needs_review: false },
+      { id: "mail-demo-2", event_type: "application_complete", subject: "\u5FDC\u52DF\u5B8C\u4E86\u306E\u304A\u77E5\u3089\u305B", store: "\u30DD\u30B1\u30E2\u30F3\u30BB\u30F3\u30BF\u30FC\u30AA\u30F3\u30E9\u30A4\u30F3", title: "30th CELEBRATION", received_at: new Date(Date.now() - 36e5).toISOString(), needs_review: false }
+    ];
+    renderAll();
+  }
+  function persistDemo() {
+    localStorage.setItem(DEMO_GLOBAL_KEY, JSON.stringify(lotteries));
+    localStorage.setItem(DEMO_PROGRESS_KEY, JSON.stringify(Object.fromEntries(progressMap)));
+    localStorage.setItem(DEMO_CATALOG_KEY, JSON.stringify(catalog));
+    localStorage.setItem(DEMO_PROFILES_KEY, JSON.stringify(profiles));
+  }
+  async function loadCloudProfile() {
+    var _a;
+    const uid = (_a = session == null ? void 0 : session.user) == null ? void 0 : _a.id;
+    if (!uid) return;
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", uid).single();
+    if (error) throw error;
+    profile = data;
+  }
+  async function loadAllData() {
+    if (mode === "demo") {
+      loadDemoData();
+      return;
+    }
+    if (!profile) {
+      return;
+    }
+    const [settingsRes, mailboxRes, eventRes] = await Promise.all([
+      supabase.from("public_settings").select("key,value"),
+      supabase.from("mailbox_aliases").select("*").eq("user_id", session.user.id).maybeSingle(),
+      supabase.from("mail_events").select("id,event_type,from_address,subject,store,title,confidence,needs_review,received_at,lottery_id").eq("user_id", session.user.id).order("received_at", { ascending: false }).limit(8)
+    ]);
+    publicSettings = Object.fromEntries((settingsRes.data || []).map((x) => [x.key, x.value]));
+    mailboxAlias = mailboxRes.data || null;
+    if (!mailboxAlias && !mailboxRes.error) {
+      await supabase.rpc("ensure_my_mailbox");
+      const retry = await supabase.from("mailbox_aliases").select("*").eq("user_id", session.user.id).maybeSingle();
+      mailboxAlias = retry.data || null;
+    }
+    mailEvents = eventRes.data || [];
+    if (currentIsActive()) {
+      const [lRes, pRes, cRes] = await Promise.all([
+        supabase.from("lotteries").select("*, lottery_links(*)").eq("is_active", true).order("deadline_date", { ascending: true }),
+        supabase.from("user_lottery_progress").select("*").eq("user_id", session.user.id),
+        supabase.from("product_catalog").select("*").eq("is_active", true).order("release_date", { ascending: false })
+      ]);
+      if (lRes.error) throw lRes.error;
+      if (pRes.error) throw pRes.error;
+      lotteries = (lRes.data || []).map(normalizeCloudLottery);
+      progressMap = new Map((pRes.data || []).map((p) => [p.lottery_id, { status: p.status, membership_done: p.membership_done, memo: p.memo || "" }]));
+      catalog = (cRes.data || []).map((c) => ({ ...c, aliases: Array.isArray(c.aliases) ? c.aliases : [] }));
+    } else {
+      lotteries = [];
+      progressMap = /* @__PURE__ */ new Map();
+      catalog = BUILTIN_CATALOG.slice();
+    }
+    if (currentIsAdmin()) await loadProfiles();
+    renderAll();
+  }
+  function normalizeCloudLottery(x) {
+    return {
+      id: x.id,
+      owner_user_id: x.owner_user_id || null,
+      store: x.store,
+      category: x.category,
+      title: x.title,
+      start_date: x.start_date,
+      deadline_date: x.deadline_date,
+      deadline_time: cleanTime(x.deadline_time),
+      result_announcement_date: x.result_announcement_date || null,
+      result_announcement_time: cleanTime(x.result_announcement_time),
+      opportunity_type: x.opportunity_type || "lottery",
+      payment_timing: x.payment_timing || "unknown",
+      payment_amount: x.payment_amount === null || x.payment_amount === undefined ? null : x.payment_amount,
+      shipping_estimate: x.shipping_estimate || null,
+      fulfillment: x.fulfillment,
+      application_method: x.application_method || "\u672A\u78BA\u8A8D",
+      membership_required: x.membership_required,
+      membership_label: x.membership_label || "",
+      extra_requirement: x.extra_requirement || "",
+      note: x.note || "",
+      is_active: x.is_active,
+      created_at: x.created_at,
+      source_type: x.source_type || "manual",
+      source_message_id: x.source_message_id || null,
+      source_entry_key: x.source_entry_key || null,
+      source_received_at: x.source_received_at || null,
+      source_subject: x.source_subject || "",
+      needs_review: !!x.needs_review,
+      categories: Array.isArray(x.categories) && x.categories.length ? x.categories : [x.category || "other"],
+      links: (x.lottery_links || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).map((l) => ({ id: l.id, label: l.label, url: l.url, type: l.type, sort_order: l.sort_order || 0 }))
+    };
+  }
+  async function loadProfiles() {
+    if (mode === "demo") return;
+    const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    if (error) {
+      console.warn(error);
+      profiles = [];
+      return;
+    }
+    profiles = data || [];
+  }
+  function setupRealtime() {
+    if (mode !== "cloud") return;
+    if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+    realtimeChannel = supabase.channel("tom-lottery-live").on("postgres_changes", { event: "*", schema: "public", table: "lotteries" }, (payload) => {
+      var _a;
+      if ((payload == null ? void 0 : payload.eventType) === "INSERT" && ["gmail", "email"].includes((_a = payload == null ? void 0 : payload.new) == null ? void 0 : _a.source_type)) toast("\u{1F4E9} \u65B0\u3057\u3044\u62BD\u9078\u30E1\u30FC\u30EB\u3092\u81EA\u52D5\u53D6\u5F97\u3057\u307E\u3057\u305F");
+      loadAllData();
+    }).on("postgres_changes", { event: "*", schema: "public", table: "lottery_links" }, () => loadAllData()).on("postgres_changes", { event: "*", schema: "public", table: "product_catalog" }, () => loadAllData()).on("postgres_changes", { event: "*", schema: "public", table: "user_lottery_progress" }, (payload) => {
+      var _a, _b;
+      if (((_a = payload == null ? void 0 : payload.new) == null ? void 0 : _a.user_id) === ((_b = session == null ? void 0 : session.user) == null ? void 0 : _b.id)) toast("\u{1F4E9} \u30B9\u30C6\u30FC\u30BF\u30B9\u3092\u81EA\u52D5\u66F4\u65B0\u3057\u307E\u3057\u305F");
+      loadAllData();
+    }).on("postgres_changes", { event: "*", schema: "public", table: "mailbox_aliases" }, () => loadAllData()).on("postgres_changes", { event: "INSERT", schema: "public", table: "mail_events" }, () => loadAllData()).subscribe();
+  }
+  function renderAll() {
+    if (!$("app") || $("app").classList.contains("hidden")) return;
+    $("inactiveNotice").classList.toggle("hidden", currentIsActive());
+    renderRoleTabs();
+    renderMailConnection();
+    renderMember();
+    if (currentIsAdmin()) renderAdmin();
+  }
+  function renderRoleTabs() {
+    $("memberTabBtn").classList.toggle("active", roleView === "member");
+    $("adminTabBtn").classList.toggle("active", roleView === "admin");
+    $("memberView").classList.toggle("hidden", roleView !== "member");
+    $("adminView").classList.toggle("hidden", roleView !== "admin");
+  }
+  function mailForwardAddress() {
+    const domain = String(publicSettings.mail_domain || "").trim().replace(/^@/, "");
+    return (mailboxAlias == null ? void 0 : mailboxAlias.alias_token) && domain ? "".concat(mailboxAlias.alias_token, "@").concat(domain) : "";
+  }
+  function mailStatusLabel() {
+    if (!publicSettings.mail_domain) return { label: "\u904B\u55B6\u8A2D\u5B9A\u5F85\u3061", cls: "off" };
+    const st = (mailboxAlias == null ? void 0 : mailboxAlias.connection_status) || "unconfigured";
+    if (st === "connected") return { label: "\u{1F7E2} \u9023\u643A\u6E08\u307F", cls: "connected" };
+    if (st === "verification_received") return { label: "\u{1F7E1} \u78BA\u8A8D\u5F85\u3061", cls: "pending" };
+    if (st === "error") return { label: "\u30A8\u30E9\u30FC", cls: "pending" };
+    return { label: "\u672A\u8A2D\u5B9A", cls: "off" };
+  }
+  function mailEventLabel(type) {
+    return { forward_verification: "\u8EE2\u9001\u78BA\u8A8D", lottery_notice: "\u62BD\u9078\u6848\u5185", application_complete: "\u5FDC\u52DF\u5B8C\u4E86", result_win: "\u5F53\u9078", result_lose: "\u843D\u9078", purchase_complete: "\u8CFC\u5165\u5B8C\u4E86", shipping: "\u767A\u9001", other: "\u305D\u306E\u4ED6" }[type] || type;
+  }
+  function mailEventIcon(type) {
+    return { forward_verification: "\u{1F511}", lottery_notice: "\u{1F4E2}", application_complete: "\u2705", result_win: "\u{1F389}", result_lose: "\u2198", purchase_complete: "\u{1F6D2}", shipping: "\u{1F4E6}", other: "\u2709\uFE0F" }[type] || "\u2709\uFE0F";
+  }
+  function fmtMailTime(v) {
+    if (!v) return "";
+    try {
+      return new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(v));
+    } catch {
+      return "";
+    }
+  }
+  function renderVerificationBox(targetId) {
+    const el = $(targetId);
+    if (!el) return;
+    if ((mailboxAlias == null ? void 0 : mailboxAlias.verification_code) || (mailboxAlias == null ? void 0 : mailboxAlias.verification_url)) {
+      el.innerHTML = '<div class="status-control-label">Gmail\u8EE2\u9001\u78BA\u8A8D\u304C\u5C4A\u304D\u307E\u3057\u305F</div>'.concat(mailboxAlias.verification_code ? '<div class="mail-verify-code">'.concat(esc(mailboxAlias.verification_code), "</div>") : "").concat(mailboxAlias.verification_url ? '<a class="action-link entry" href="'.concat(esc(mailboxAlias.verification_url), '" target="_blank" rel="noopener noreferrer" style="margin-top:7px">\u78BA\u8A8D\u30EA\u30F3\u30AF\u3092\u958B\u304F</a>') : "");
+      el.classList.remove("hidden");
+    } else {
+      el.innerHTML = "\u78BA\u8A8D\u30E1\u30FC\u30EB\u5F85\u3061";
+      if (targetId === "mailVerifyInline") el.classList.add("hidden");
+    }
+  }
+  function renderMailConnection() {
+    if (!$("mailConnectCard")) return;
+    const st = mailStatusLabel();
+    $("mailConnectStatus").textContent = st.label;
+    $("mailConnectStatus").className = "mail-status " + st.cls;
+    const addr = mailForwardAddress();
+    $("mailForwardAddress").textContent = addr || "\u53D7\u4FE1\u7528\u30C9\u30E1\u30A4\u30F3\u304C\u307E\u3060\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093";
+    $("copyMailAddressBtn").disabled = !addr;
+    $("openMailSetupBtn").disabled = !addr;
+    $("mailLastReceived").textContent = (mailboxAlias == null ? void 0 : mailboxAlias.last_received_at) ? "\u6700\u7D42\u53D7\u4FE1\uFF1A".concat(fmtMailTime(mailboxAlias.last_received_at)) : addr ? "\u307E\u3060\u5BFE\u8C61\u30E1\u30FC\u30EB\u3092\u53D7\u4FE1\u3057\u3066\u3044\u307E\u305B\u3093" : "";
+    renderVerificationBox("mailVerifyInline");
+    if (mailEvents.length) {
+      $("mailRecentWrap").classList.remove("hidden");
+      $("mailEventList").innerHTML = mailEvents.slice(0, 5).map((e) => '<div class="mail-event-row"><div class="mail-event-icon">'.concat(mailEventIcon(e.event_type), '</div><div class="mail-event-main"><div class="mail-event-title">').concat(esc(mailEventLabel(e.event_type)), "\uFF5C").concat(esc(e.store || e.title || e.subject || "\u30E1\u30FC\u30EB"), '</div><div class="mail-event-meta">').concat(esc(e.title || e.subject || ""), '</div></div><div class="mail-event-time">').concat(esc(fmtMailTime(e.received_at)), "</div></div>")).join("");
+    } else {
+      $("mailRecentWrap").classList.add("hidden");
+      $("mailEventList").innerHTML = "";
+    }
+    if ($("mailDomainSetting")) $("mailDomainSetting").value = publicSettings.mail_domain || "";
+  }
+  function openMailSetup() {
+    const addr = mailForwardAddress();
+    if (!addr) {
+      toast("\u53D7\u4FE1\u7528\u30C9\u30E1\u30A4\u30F3\u306E\u8A2D\u5B9A\u5F85\u3061\u3067\u3059");
+      return;
+    }
+    $("mailSetupAddress").textContent = addr;
+    $("mailFilterQuery").textContent = "from:(joshin.co.jp OR pokemoncenter-online.com OR livepocket.jp OR takaratomymall.jp OR takaratomyfans.com)";
+    renderVerificationBox("mailSetupVerification");
+    $("mailSetupBackdrop").classList.add("show");
+  }
+  async function copyText(text, msg = "\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F") {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast(msg);
+    } catch {
+      toast("\u30B3\u30D4\u30FC\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F");
+    }
+  }
+  async function refreshMailData() {
+    if (mode === "cloud") {
+      await loadCloudProfile();
+      await loadAllData();
+    } else renderMailConnection();
+    toast("\u30E1\u30FC\u30EB\u9023\u643A\u72B6\u614B\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F");
+  }
+  async function saveMailDomain() {
+    if (!currentIsAdmin() || mode !== "cloud") {
+      toast("\u672C\u756A\u306E\u904B\u55B6\u30A2\u30AB\u30A6\u30F3\u30C8\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044");
+      return;
+    }
+    const domain = $("mailDomainSetting").value.trim().toLowerCase().replace(/^@/, "").replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    if (!domain || !domain.includes(".")) {
+      toast("\u53D7\u4FE1\u7528\u30C9\u30E1\u30A4\u30F3\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044");
+      return;
+    }
+    const { error } = await supabase.from("public_settings").upsert({ key: "mail_domain", value: domain, updated_at: (/* @__PURE__ */ new Date()).toISOString() }, { onConflict: "key" });
+    if (error) {
+      toast("\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F");
+      console.error(error);
+      return;
+    }
+    publicSettings.mail_domain = domain;
+    renderMailConnection();
+    toast("\u53D7\u4FE1\u7528\u30C9\u30E1\u30A4\u30F3\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F");
+  }
+  function renderMember() {
+    if (!currentIsActive()) {
+      $("lotteryList").innerHTML = "";
+      if ($("archiveList")) $("archiveList").innerHTML = "";
+      $("emptyState").hidden = false;
+      if ($("archiveEmpty")) $("archiveEmpty").hidden = false;
+      updateArchiveUI(0);
+      updateSummary();
+      return;
+    }
+    const q = $("searchInput").value.trim().toLowerCase();
+    const status = $("statusFilter").value;
+    const sort = $("sortSelect").value;
+    const filtered = lotteries.filter((x) => {
+      const p = getProgress(x.id);
+      const hay = "".concat(x.store, " ").concat(x.title).toLowerCase();
+      return (!q || hay.includes(q)) && (activeCategory === "all" || hasCategory(x, activeCategory)) && (status === "all" || p.status === status);
+    });
+    const sorter = (a, b) => {
+      if (sort === "store") return (a.store || "").localeCompare(b.store || "", "ja");
+      if (sort === "newest") return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      return (a.deadline_date || "9999").localeCompare(b.deadline_date || "9999");
+    };
+    const activeList = filtered.filter((x) => !TERMINAL_STATUSES.includes(getProgress(x.id).status)).sort(sorter);
+    const archivedList = filtered.filter((x) => TERMINAL_STATUSES.includes(getProgress(x.id).status)).sort(sorter);
+    $("lotteryList").innerHTML = activeList.map((x) => renderLotteryCard(x, false)).join("");
+    $("emptyState").hidden = !!activeList.length;
+    if ($("archiveList")) $("archiveList").innerHTML = archivedList.map((x) => renderLotteryCard(x, false)).join("");
+    if ($("archiveEmpty")) $("archiveEmpty").hidden = !!archivedList.length;
+    updateArchiveUI(archivedList.length);
+    bindLotteryEvents(false);
+    updateSummary();
+  }
+  function updateSummary() {
+    const ps = lotteries.map((x) => ({ x, p: getProgress(x.id) }));
+    $("countTotal").textContent = currentIsActive() ? ps.filter((o) => !TERMINAL_STATUSES.includes(o.p.status)).length : 0;
+    $("countUnapplied").textContent = ps.filter((o) => o.p.status === "\u672A\u5FDC\u52DF").length;
+    $("countSoon").textContent = ps.filter((o) => o.p.status === "\u672A\u5FDC\u52DF" && dayDiff(o.x.deadline_date) >= 0 && dayDiff(o.x.deadline_date) <= 3).length;
+    $("countToday").textContent = ps.filter((o) => o.p.status === "\u672A\u5FDC\u52DF" && dayDiff(o.x.deadline_date) === 0).length;
+    $("countWon").textContent = ps.filter((o) => o.p.status === "\u5F53\u9078").length;
+  }
+  function updateArchiveUI(count) {
+    if (!$("archiveWrap")) return;
+    $("archiveCount").textContent = count;
+    $("archiveWrap").classList.toggle("open", archiveOpen);
+    $("archiveBody").style.display = archiveOpen ? "block" : "none";
+    $("archiveToggle").setAttribute("aria-expanded", archiveOpen ? "true" : "false");
+    $("archiveChevron").textContent = archiveOpen ? "\u2303" : "\u2304";
+  }
+  function currentJSTMinutes() {
+    const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+    let h = 0, m = 0;
+    parts.forEach((p) => { if (p.type === "hour") h = Number(p.value === "24" ? "0" : p.value); if (p.type === "minute") m = Number(p.value); });
+    return h * 60 + m;
+  }
+  function resultMomentPassed(date, time) {
+    if (!date) return false;
+    const today = todayJST();
+    if (date < today) return true;
+    if (date > today) return false;
+    if (!time) return false;
+    const t = cleanTime(time).split(":");
+    if (t.length !== 2) return false;
+    return currentJSTMinutes() >= Number(t[0]) * 60 + Number(t[1]);
+  }
+  function renderLotteryCard(item, adminMode) {
+    const p = getProgress(item.id);
+    const cats = itemCategories(item);
+    const primary = primaryCategory(item);
+    const isLotteryEntry = (item.opportunity_type || "lottery") === "lottery";
+    const showResult = !adminMode && isLotteryEntry && p.status === "結果待ち";
+    const displayDate = showResult ? item.result_announcement_date : item.deadline_date;
+    const displayTimeRaw = showResult ? item.result_announcement_time : item.deadline_time;
+    const left = displayDate ? dayDiff(displayDate) : 99999;
+    const resultPassed = showResult && resultMomentPassed(displayDate, displayTimeRaw);
+    const stateBase = showResult && !displayDate ? "result-missing" : resultPassed ? "today" : left === 0 ? "today" : left === 1 ? "tomorrow" : left >= 2 && left <= 3 ? "soon" : "";
+    const deadlineState = (showResult ? "result-mode " : "") + stateBase;
+    const time = displayTimeRaw ? cleanTime(displayTimeRaw) : "";
+    const weekday = weekdayInfo(displayDate);
+    const deadlineDateText = showResult && !displayDate ? "未入力" : fmtDate(displayDate);
+    const deadlineLeftText = showResult ? (!displayDate ? "要確認" : resultPassed ? "結果確認" : left === 0 ? "本日発表" : "あと".concat(left, "日")) : (left < 0 ? "終了" : left === 0 ? "本日" : "あと".concat(left, "日"));
+    const isOpen = openId === item.id;
+    const membershipChip = item.membership_required ? '<span class="small-chip '.concat(p.membership_done ? "ok" : "warn", '">').concat(p.membership_done ? "\u4F1A\u54E1\u6761\u4EF6\u78BA\u8A8D\u6E08\u307F" : esc(item.membership_label || "\u4F1A\u54E1\u767B\u9332\u5FC5\u8981"), "</span>") : "";
+    const applyChip = item.application_method && item.application_method !== "\u672A\u78BA\u8A8D" ? '<span class="small-chip ok">'.concat(esc(item.application_method === "\u30A2\u30D7\u30EA" ? "\u30A2\u30D7\u30EA\u5FDC\u52DF" : item.application_method + "\u5FDC\u52DF"), "</span>") : "";
+    const requirementChip = item.extra_requirement ? '<span class="small-chip warn">'.concat(esc(item.extra_requirement), "</span>") : "";
+    const sourceChip = ["gmail", "email"].includes(item.source_type) ? '<span class="small-chip mail">\u{1F4E9} \u30E1\u30FC\u30EB\u53D6\u5F97</span>' : "";
+    const personalChip = item.owner_user_id ? '<span class="small-chip mail">\u{1F512} \u500B\u4EBA</span>' : "";
+    const reviewChip = item.source_type === "gmail" && item.needs_review ? '<span class="small-chip review">\u8981\u78BA\u8A8D</span>' : "";
+    const displayNote = cleanDisplayNote(item.note);
+    const progress = statusProgress(p.status);
+    const labels = '<span class="brand-stack">'.concat(cats.map((cat) => '<span class="brand-label '.concat(esc(cat), '">').concat(brandLabel(cat), "</span>")).join(""), "</span>");
+    const multiClass = cats.length > 1 ? "multi-".concat(Math.min(cats.length, 4)) : "";
+    const styleVars = cats.slice(0, 4).map((cat, i) => "--multi".concat(i + 1, ":").concat(categoryVar(cat), ";")).join("");
+    const links = (item.links || []).map((l) => '<a class="action-link '.concat(l.type === "entry" ? "entry" : "", '" href="').concat(esc(l.url), '" target="_blank" rel="noopener noreferrer">').concat(esc(l.label), "</a>")).join("");
+    const statusControls = adminMode ? "" : '\n        <div class="status-control-box">\n          <div class="status-control-label">\u3042\u306A\u305F\u306E\u30B9\u30C6\u30FC\u30BF\u30B9</div>\n          <select class="control" data-status-set="'.concat(esc(item.id), '">\n            ').concat(STATUS_OPTIONS.map((s) => '<option value="'.concat(s, '" ').concat(p.status === s ? "selected" : "", ">").concat(s, "</option>")).join(""), '\n          </select>\n          <div class="status-buttons">\n            <button class="soft-btn" data-status-back="').concat(esc(item.id), '" ').concat(STATUS_FLOW.indexOf(p.status) <= 0 ? "disabled" : "", '>\u2190 \u623B\u3059</button>\n            <button class="primary-btn" data-status-next="').concat(esc(item.id), '" ').concat(STATUS_FLOW.indexOf(p.status) === -1 || p.status === STATUS_FLOW.at(-1) ? "disabled" : "", ">").concat(p.status === "\u672A\u5FDC\u52DF" ? "\u5FDC\u52DF\u5B8C\u4E86 \u2192" : p.status === "\u5F53\u9078" ? "\u5B8C\u4E86\u306B\u3059\u308B \u2192" : "\u9032\u3081\u308B \u2192", "</button>\n          </div>\n          ").concat(item.membership_required ? '<button class="soft-btn" data-member-toggle="'.concat(esc(item.id), '" style="width:100%;margin-top:8px">').concat(p.membership_done ? "\u4F1A\u54E1\u6761\u4EF6\u3092\u672A\u78BA\u8A8D\u3078\u623B\u3059" : "\u4F1A\u54E1\u6761\u4EF6\u78BA\u8A8D\u6E08\u307F\u306B\u3059\u308B", "</button>") : "", '\n          <div class="personal-note">\n            <div class="status-control-label">\u81EA\u5206\u7528\u30E1\u30E2</div>\n            <textarea class="control" data-personal-note="').concat(esc(item.id), '" placeholder="\u5F53\u9078\u5E97\u8217\u3001\u53D7\u53D6\u4E88\u5B9A\u306A\u3069">').concat(esc(p.memo || ""), '</textarea>\n            <button class="soft-btn" data-save-note="').concat(esc(item.id), '" style="width:100%;margin-top:6px">\u30E1\u30E2\u3092\u4FDD\u5B58</button>\n          </div>\n        </div>');
+    const adminControls = adminMode ? '\n        <div class="admin-actions">\n          <button class="soft-btn" data-admin-edit="'.concat(esc(item.id), '">\u7DE8\u96C6</button>\n          <button class="danger-btn" data-admin-delete="').concat(esc(item.id), '">\u524A\u9664</button>\n        </div>') : "";
+    return '\n        <article class="lottery-row '.concat(esc(primary), " ").concat(multiClass, " ").concat(isOpen ? "open" : "", '" style="').concat(styleVars, '">\n          <button class="row-summary" data-open="').concat(esc(item.id), '" aria-expanded="').concat(isOpen, '">\n            <div class="row-main">\n              <div class="meta-line">\n                ').concat(labels, "\n                ").concat(!adminMode && p.status === "\u672A\u5FDC\u52DF" ? '<span class="unapplied-badge" title="\u672A\u5FDC\u52DF">\u672A</span>' : "", '\n              </div>\n              <div class="store-line"><span class="store-name">').concat(esc(item.store), '</span></div>\n              <div class="item-title">').concat(esc(item.title), '</div>\n            </div>\n            <div class="deadline-wrap">\n              <div class="deadline-box ').concat(deadlineState, '">\n                <div class="deadline-label">\u7DE0\u5207</div>\n                <div class="deadline-date-row"><div class="deadline-date">').concat(esc(deadlineDateText), "</div>").concat(weekday.label ? '<span class="weekday-badge '.concat(weekday.cls, '">').concat(weekday.label, "</span>") : "", "</div>\n                ").concat(time ? '<div class="deadline-time">'.concat(esc(time), "</div>") : "", '\n                <div class="deadline-left">').concat(esc(deadlineLeftText), '</div>\n              </div>\n              <span class="chevron">\u2304</span>\n            </div>\n          </button>\n          <div class="details">\n            <div class="chip-row">\n              <span class="small-chip">').concat(esc(fulfillmentLabel(item)), "</span>\n              ").concat(applyChip, "\n              ").concat(membershipChip, "\n              ").concat(requirementChip, "\n              ").concat(sourceChip, "\n              ").concat(personalChip, "\n              ").concat(reviewChip, "\n              ").concat(!adminMode && p.status !== "\u672A\u5FDC\u52DF" ? '<span class="small-chip">'.concat(esc(p.status), "</span>") : "", "\n            </div>\n            ").concat(!adminMode ? '\n              <div class="progress-box">\n                <div class="progress-head"><span>\u9032\u6357</span><span>'.concat(progress, '%</span></div>\n                <div class="progress-track"><div class="progress-bar" style="width:').concat(progress, '%"></div></div>\n              </div>') : "", '\n            <div class="info-grid">\n              <div class="info-box"><div class="info-label">\u53D7\u4ED8\u958B\u59CB</div><div class="info-value">').concat(esc(fmtDate(item.start_date)), '</div></div>\n              <div class="info-box"><div class="info-label">\u5FDC\u52DF\u7DE0\u5207</div><div class="info-value">').concat(esc(fmtDate(item.deadline_date))).concat(time ? " " + esc(time) : "", "</div></div>\n            </div>\n            ").concat(displayNote ? '<div class="notice" style="margin-top:9px">'.concat(esc(displayNote), "</div>") : "", "\n            ").concat(links ? '<div class="link-grid">'.concat(links, "</div>") : "", "\n            ").concat(statusControls, "\n            ").concat(adminControls, "\n          </div>\n        </article>");
+  }
+  function bindLotteryEvents(adminMode) {
+    document.querySelectorAll(adminMode ? "#adminLotteryList [data-open]" : "#lotteryList [data-open], #archiveList [data-open]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        openId = openId === btn.dataset.open ? null : btn.dataset.open;
+        adminMode ? renderAdminLotteries() : renderMember();
+      });
+    });
+    if (adminMode) {
+      document.querySelectorAll("[data-admin-edit]").forEach((b) => b.addEventListener("click", () => openEdit(b.dataset.adminEdit)));
+      document.querySelectorAll("[data-admin-delete]").forEach((b) => b.addEventListener("click", () => deleteLottery(b.dataset.adminDelete)));
+      return;
+    }
+    document.querySelectorAll("[data-status-set]").forEach((s) => s.addEventListener("change", () => saveProgressStatus(s.dataset.statusSet, s.value)));
+    document.querySelectorAll("[data-status-back]").forEach((b) => b.addEventListener("click", () => {
+      const p = getProgress(b.dataset.statusBack);
+      const i = STATUS_FLOW.indexOf(p.status);
+      if (i > 0) saveProgressStatus(b.dataset.statusBack, STATUS_FLOW[i - 1]);
+    }));
+    document.querySelectorAll("[data-status-next]").forEach((b) => b.addEventListener("click", () => {
+      const p = getProgress(b.dataset.statusNext);
+      const i = STATUS_FLOW.indexOf(p.status);
+      if (i < STATUS_FLOW.length - 1) saveProgressStatus(b.dataset.statusNext, STATUS_FLOW[i + 1]);
+    }));
+    document.querySelectorAll("[data-member-toggle]").forEach((b) => b.addEventListener("click", () => {
+      const p = getProgress(b.dataset.memberToggle);
+      saveProgressPatch(b.dataset.memberToggle, { membership_done: !p.membership_done });
+    }));
+    document.querySelectorAll("[data-save-note]").forEach((b) => b.addEventListener("click", () => {
+      const t = document.querySelector('[data-personal-note="'.concat(CSS.escape(b.dataset.saveNote), '"]'));
+      saveProgressPatch(b.dataset.saveNote, { memo: (t == null ? void 0 : t.value) || "" });
+    }));
+    const archiveToggleEl = $("archiveToggle");
+    if (archiveToggleEl) {
+      archiveToggleEl.onclick = () => {
+        var _a;
+        archiveOpen = !archiveOpen;
+        updateArchiveUI(Number(((_a = $("archiveCount")) == null ? void 0 : _a.textContent) || 0));
+      };
+    }
+  }
+  async function saveProgressStatus(lotteryId, status) {
+    await saveProgressPatch(lotteryId, { status: normalizeStatus(status) });
+  }
+  async function saveProgressPatch(lotteryId, patch) {
+    const cur = getProgress(lotteryId);
+    const next = { ...cur, ...patch };
+    progressMap.set(lotteryId, next);
+    if (mode === "demo") {
+      persistDemo();
+      renderMember();
+      toast("\u500B\u4EBA\u30B9\u30C6\u30FC\u30BF\u30B9\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F");
+      return;
+    }
+    const payload = { user_id: session.user.id, lottery_id: lotteryId, status: next.status, membership_done: !!next.membership_done, memo: next.memo || "", updated_at: (/* @__PURE__ */ new Date()).toISOString() };
+    const { error } = await supabase.from("user_lottery_progress").upsert(payload, { onConflict: "user_id,lottery_id" });
+    if (error) {
+      toast("\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F");
+      console.error(error);
+      return;
+    }
+    renderMember();
+    toast("\u500B\u4EBA\u30B9\u30C6\u30FC\u30BF\u30B9\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F");
+  }
+  function renderAdmin() {
+    document.querySelectorAll("[data-admin-section]").forEach((b) => b.classList.toggle("active", b.dataset.adminSection === adminSection));
+    $("adminLotteries").classList.toggle("hidden", adminSection !== "lotteries");
+    $("adminMembers").classList.toggle("hidden", adminSection !== "members");
+    $("adminCatalog").classList.toggle("hidden", adminSection !== "catalog");
+    $("adminTools").classList.toggle("hidden", adminSection !== "tools");
+    if (adminSection === "lotteries") renderAdminLotteries();
+    if (adminSection === "members") renderMembers();
+    if (adminSection === "catalog") renderCatalog();
+    if (adminSection === "tools") renderMailConnection();
+  }
+  function renderAdminLotteries() {
+    const globalList = lotteries.filter((x) => !x.owner_user_id);
+    $("adminLotteryCount").textContent = "".concat(globalList.length, "\u4EF6");
+    const list = globalList.slice().sort((a, b) => (a.deadline_date || "9999").localeCompare(b.deadline_date || "9999"));
+    $("adminLotteryList").innerHTML = list.map((x) => renderLotteryCard(x, true)).join("");
+    bindLotteryEvents(true);
+  }
+  function renderMembers() {
+    $("memberList").innerHTML = (profiles || []).map((p) => '\n        <div class="member-row">\n          <div class="member-main">\n            <div class="member-email">'.concat(esc(p.email || p.display_name || p.id), '</div>\n            <div class="member-meta">').concat(p.role === "admin" ? "\u904B\u55B6" : "\u4F1A\u54E1", " / ").concat(p.membership_status || "pending").concat(p.expires_at ? " / \u671F\u9650 " + esc(p.expires_at) : "", " / \u30E1\u30FC\u30EB:").concat(p.mail_connection_status === "connected" ? "\u9023\u643A\u6E08" : p.mail_connection_status === "verification_received" ? "\u78BA\u8A8D\u5F85\u3061" : "\u672A\u9023\u643A").concat(p.mail_last_received_at ? " / \u6700\u7D42 " + esc(fmtMailTime(p.mail_last_received_at)) : "", '</div>\n          </div>\n          <div class="member-actions">\n            ').concat(p.role === "admin" ? '<span class="badge">ADMIN</span>' : '\n            <select class="control" data-member-status="'.concat(esc(p.id), '">\n              <option value="pending" ').concat(p.membership_status === "pending" ? "selected" : "", '>\u627F\u8A8D\u5F85\u3061</option>\n              <option value="active" ').concat(p.membership_status === "active" ? "selected" : "", '>\u6709\u52B9</option>\n              <option value="inactive" ').concat(p.membership_status === "inactive" ? "selected" : "", ">\u505C\u6B62</option>\n            </select>"), "\n          </div>\n        </div>")).join("");
+    $("memberEmpty").hidden = !!profiles.length;
+    document.querySelectorAll("[data-member-status]").forEach((s) => s.addEventListener("change", () => updateMemberStatus(s.dataset.memberStatus, s.value)));
+  }
+  async function updateMemberStatus(id, status) {
+    if (mode === "demo") {
+      const p = profiles.find((x) => x.id === id);
+      if (p) p.membership_status = status;
+      persistDemo();
+      renderMembers();
+      toast("\u4F1A\u54E1\u72B6\u614B\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F");
+      return;
+    }
+    const { error } = await supabase.from("profiles").update({ membership_status: status }).eq("id", id);
+    if (error) {
+      toast("\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F");
+      console.error(error);
+      return;
+    }
+    await loadProfiles();
+    renderMembers();
+    toast("\u4F1A\u54E1\u72B6\u614B\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F");
+  }
+  function renderCatalog() {
+    const list = [...catalog].sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""));
+    $("catalogList").innerHTML = list.map((c) => '\n        <div class="catalog-row">\n          <div class="catalog-main">\n            <div class="catalog-title"><span class="brand-label '.concat(esc(c.category), '">').concat(brandLabel(c.category), "</span> ").concat(esc(c.name), '</div>\n            <div class="catalog-meta">').concat(esc(c.release_date || "\u767A\u58F2\u65E5\u672A\u8A2D\u5B9A"), " / ").concat((c.aliases || []).map(esc).join(", "), '</div>\n          </div>\n          <button class="danger-btn" data-catalog-delete="').concat(esc(c.id || ""), '">').concat(c.id ? "\u524A\u9664" : "\u5185\u8535", "</button>\n        </div>")).join("");
+    document.querySelectorAll("[data-catalog-delete]").forEach((b) => {
+      if (!b.dataset.catalogDelete) {
+        b.disabled = true;
+        return;
+      }
+      b.addEventListener("click", () => deleteCatalog(b.dataset.catalogDelete));
+    });
+  }
+  async function addCatalog() {
+    const name = $("catalogName").value.trim();
+    if (!name) {
+      toast("\u5546\u54C1\u540D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044");
+      return;
+    }
+    const item = { id: rid(), category: $("catalogCategory").value, name, release_date: $("catalogRelease").value || null, aliases: $("catalogAliases").value.split(",").map((x) => x.trim()).filter(Boolean), is_active: true };
+    if (!item.aliases.includes(name)) item.aliases.unshift(name);
+    if (mode === "demo") {
+      catalog.push(item);
+      persistDemo();
+      renderCatalog();
+      clearCatalogForm();
+      toast("\u5546\u54C1\u30DE\u30B9\u30BF\u306B\u8FFD\u52A0\u3057\u307E\u3057\u305F");
+      return;
+    }
+    const { data, error } = await supabase.from("product_catalog").insert({ category: item.category, name: item.name, release_date: item.release_date, aliases: item.aliases, is_active: true }).select().single();
+    if (error) {
+      toast("\u8FFD\u52A0\u306B\u5931\u6557\u3057\u307E\u3057\u305F");
+      console.error(error);
+      return;
+    }
+    catalog.unshift(data);
+    renderCatalog();
+    clearCatalogForm();
+    toast("\u5546\u54C1\u30DE\u30B9\u30BF\u306B\u8FFD\u52A0\u3057\u307E\u3057\u305F");
+  }
+  function clearCatalogForm() {
+    $("catalogName").value = "";
+    $("catalogAliases").value = "";
+    $("catalogRelease").value = "";
+  }
+  async function deleteCatalog(id) {
+    if (!confirm("\u3053\u306E\u5546\u54C1\u30DE\u30B9\u30BF\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F")) return;
+    if (mode === "demo") {
+      catalog = catalog.filter((x) => x.id !== id);
+      persistDemo();
+      renderCatalog();
+      return;
+    }
+    const { error } = await supabase.from("product_catalog").delete().eq("id", id);
+    if (error) {
+      toast("\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F");
+      return;
+    }
+    await loadAllData();
+  }
+  function mergedCatalog() {
+    return [...BUILTIN_CATALOG, ...catalog].filter((v, i, a) => a.findIndex((x) => x.category === v.category && x.name === v.name) === i);
+  }
+  function normalize(s) {
+    return String(s || "").normalize("NFKC").toUpperCase();
+  }
+  function findCatalogMatches(text) {
+    const n = normalize(text);
+    const found = [];
+    for (const p of mergedCatalog()) {
+      const aliases = [p.name, ...p.aliases || []];
+      let best = -1, bestAlias = "";
+      for (const a of aliases) {
+        const i = n.indexOf(normalize(a));
+        if (i >= 0 && (best < 0 || i < best)) {
+          best = i;
+          bestAlias = a;
+        }
+      }
+      if (best >= 0) found.push({ ...p, _index: best, _alias: bestAlias });
+    }
+    return found.sort((a, b) => a._index - b._index);
+  }
+  function categoriesFromText(text, matches) {
+    const out = [];
+    const push = (v) => {
+      if (v && !out.includes(v)) out.push(v);
+    };
+    matches.forEach((m) => push(m.category));
+    if (/ONE\s*PIECE|ワンピース|OP-\d+/i.test(text)) push("onepiece");
+    if (/POK[EÉ]MON|ポケモン|ポケカ|エーフィ|ブラッキー|ピカチュウ/i.test(text)) push("pokemon");
+    if (/DRAGON\s*BALL|ドラゴンボール|スーパーダイバーズ/i.test(text)) push("dragonball");
+    if (/BEYBLADE|ベイブレード|玩具|おもちゃ/i.test(text)) push("other");
+    return out.length ? out : ["other"];
+  }
+  function detectStore(lines) {
+    const marker = lines.findIndex((x) => /【抽選販売】|抽選販売/.test(x));
+    if (marker > 0) {
+      for (let i = marker - 1; i >= 0; i--) {
+        const s = lines[i].trim();
+        if (s && !/期間|受付|配送|店舗受取|店頭受取|※/.test(s) && !/^https?:/.test(s)) return s;
+      }
+    }
+    const known = ["\u30A4\u30AA\u30F3\u30AD\u30C3\u30BA\u30EA\u30D1\u30D6\u30EA\u30C3\u30AF", "\u30AD\u30C3\u30BA\u30EA\u30D1\u30D6\u30EA\u30C3\u30AF", "\u30DD\u30B1\u30E2\u30F3\u30BB\u30F3\u30BF\u30FC\u30AA\u30F3\u30E9\u30A4\u30F3", "\u304A\u5B9D\u5275\u5EAB\u30B0\u30EB\u30FC\u30D7\u30A2\u30D7\u30EA", "\u30E4\u30DE\u30C0\u30C7\u30F3\u30AD", "\u30D3\u30C3\u30AF\u30AB\u30E1\u30E9", "\u30E8\u30C9\u30D0\u30B7\u30AB\u30E1\u30E9", "\u30BB\u30D6\u30F3\u30CD\u30C3\u30C8", "\u697D\u5929\u30D6\u30C3\u30AF\u30B9", "\u304A\u5B9D\u5275\u5EAB", "\u304A\u3058\u3083\u307E\u9928", "\u30E1\u30C7\u30A3\u30AA\uFF01", "\u30A8\u30B3\u30C4\u30FC\u30EB", "\u30E4\u30DE\u30B7\u30ED\u30E4", "\u4E09\u6D0B\u5802", "\u30A8\u30C7\u30A3\u30AA\u30F3", "\u30B8\u30E7\u30FC\u30B7\u30F3", "Joshin", "\u30C8\u30A4\u30B6\u3089\u30B9", "\u53E4\u672C\u5E02\u5834", "\u3075\u308B\u3044\u3061", "\u30D7\u30EC\u30A4\u30BA", "TSUTAYA", "Amazon", "\u30A4\u30AA\u30F3", "GEO", "\u30B2\u30AA", "\u3042\u307F\u3042\u307F"];
+    const joined = lines.join("\n");
+    const matches = known.filter((x) => joined.includes(x)).sort((a, b) => b.length - a.length);
+    return matches[0] || "\u5E97\u8217\u672A\u8A2D\u5B9A";
+  }
+  function detectDates(text) {
+    const year = Number(todayJST().slice(0, 4));
+    const range = text.match(/(\d{1,2})月(\d{1,2})日(?:\s*\d{1,2}時(?:\d{1,2}分)?)?\s*[～〜~\-ー]\s*(\d{1,2})月(\d{1,2})日(?:\s*(\d{1,2})時(?:(\d{1,2})分)?)?/);
+    if (!range) return { start: null, deadline: null, deadlineTime: "" };
+    const sm = Number(range[1]), dm = Number(range[3]);
+    const deadlineYear = dm < sm ? year + 1 : year;
+    const start = "".concat(year, "-").concat(String(sm).padStart(2, "0"), "-").concat(String(range[2]).padStart(2, "0"));
+    const deadline = "".concat(deadlineYear, "-").concat(String(dm).padStart(2, "0"), "-").concat(String(range[4]).padStart(2, "0"));
+    const h = range[5] ? String(range[5]).padStart(2, "0") : "", m = range[6] ? String(range[6]).padStart(2, "0") : "00";
+    return { start, deadline, deadlineTime: h ? "".concat(h, ":").concat(m) : "" };
+  }
+  function cleanHeading(s) {
+    return String(s || "").replace(/[↓▼▽→【】\[\]★☆◆◇■□●○]/g, "").trim();
+  }
+  function classifyLinkLabel(label) {
+    const s = cleanHeading(label);
+    if (/会員|メンバー|登録/.test(s)) return "member";
+    if (/応募|エントリー|抽選フォーム|申込/.test(s)) return "entry";
+    if (/店舗|取扱店|ショップ/.test(s)) return "store";
+    return "detail";
+  }
+  function parseLinks(text) {
+    const lines = text.split(/\r?\n/).map((x) => x.trim());
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (!/^https?:\/\/\S+/i.test(lines[i])) continue;
+      const url = lines[i].match(/^https?:\/\/\S+/i)[0];
+      let prev = "";
+      let prev2 = "";
+      for (let j = i - 1; j >= 0 && j >= i - 4; j--) {
+        if (lines[j] && !/^https?:/.test(lines[j])) {
+          if (!prev) prev = lines[j];
+          else {
+            prev2 = lines[j];
+            break;
+          }
+        }
+      }
+      const p1 = cleanHeading(prev), p2 = cleanHeading(prev2);
+      let label = p1 || "\u8A73\u7D30";
+      let type = classifyLinkLabel(p1);
+      if (type === "detail" && /詳細.*応募フォーム|応募フォーム|エントリー/.test(p2)) {
+        type = "entry";
+        label = p1 ? "".concat(p1, " \u5FDC\u52DF") : "\u5FDC\u52DF\u30D5\u30A9\u30FC\u30E0";
+      }
+      if (type === "detail" && /会員登録/.test(p2)) {
+        type = "member";
+        label = "\u4F1A\u54E1\u767B\u9332";
+      }
+      if (type === "detail" && /トレカ取扱店舗|取扱店舗/.test(p2)) {
+        type = "store";
+        label = p1 || "\u53D6\u6271\u5E97\u8217";
+      }
+      if (/詳細・応募フォーム/.test(p1)) {
+        type = "entry";
+        label = "\u8A73\u7D30\u30FB\u5FDC\u52DF\u30D5\u30A9\u30FC\u30E0";
+      }
+      if (/応募フォーム/.test(p1)) {
+        type = "entry";
+        label = p1;
+      }
+      if (/会員登録/.test(p1)) {
+        type = "member";
+        label = "\u4F1A\u54E1\u767B\u9332";
+      }
+      if (/トレカ取扱店舗/.test(p1)) {
+        type = "store";
+        label = "\u30C8\u30EC\u30AB\u53D6\u6271\u5E97\u8217";
+      }
+      out.push({ label: label || "\u8A73\u7D30", url, type, sort_order: out.length + 1 });
+    }
+    return out;
+  }
+  function detectTitle(lines, store, matches) {
+    const start = lines.findIndex((x) => /【抽選販売】|抽選販売/.test(x));
+    const section = start >= 0 ? lines.slice(start + 1) : lines;
+    const candidates = [];
+    for (const s0 of section) {
+      const s = s0.trim();
+      if (!s || /^https?:/i.test(s)) continue;
+      if (/^(↓|▼|▽)/.test(s)) continue;
+      if (/会員登録|アプリ会員|応募フォーム|詳細|店舗一覧|対象店舗|取扱店舗|受付期間|応募期間|全国配送|店舗受取|店頭受取|配送|発送|必要です|限定。|から応募|まで$/.test(s)) break;
+      if (s === store) continue;
+      candidates.push(s);
+      if (candidates.length >= 5) break;
+    }
+    const matchNames = [];
+    for (const m of matches) {
+      const alias = String(m._alias || "").trim();
+      const display = /^(OP|EB)-?\d+$/i.test(alias) ? m.name : alias || m.name;
+      if (display && !matchNames.includes(display)) matchNames.push(display);
+    }
+    const merged = [];
+    for (const c of candidates) {
+      if (!merged.some((x) => normalize(x) === normalize(c))) merged.push(c);
+    }
+    for (const m of matchNames) {
+      if (!merged.some((x) => normalize(x) === normalize(m))) merged.push(m);
+    }
+    return (merged.length ? merged : matchNames).join(" / ") || "\u62BD\u9078\u5546\u54C1";
+  }
+  function detectResultAnnouncement(text, deadlineDate) {
+    const lines = String(text || "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+    let date = "", time = "";
+    for (const line of lines) {
+      if (!/結果発表|当選発表|当落発表|抽選結果|当落結果/.test(line)) continue;
+      let m = line.match(/(?:(\d{4})年)?(\d{1,2})月(\d{1,2})日/);
+      if (!m) m = line.match(/(?:(\d{4})[\/.\-])?(\d{1,2})[\/.\-](\d{1,2})/);
+      if (m) {
+        const base = deadlineDate || todayJST();
+        let year = m[1] ? Number(m[1]) : Number(base.slice(0, 4));
+        const month = Number(m[2]), day = Number(m[3]), baseMonth = Number(base.slice(5, 7));
+        if (!m[1] && deadlineDate && month < baseMonth - 6) year++;
+        date = "".concat(year, "-").concat(String(month).padStart(2, "0"), "-").concat(String(day).padStart(2, "0"));
+      }
+      let tm = line.match(/([01]?\d|2[0-3])[:：]([0-5]\d)/);
+      if (tm) time = "".concat(String(tm[1]).padStart(2, "0"), ":").concat(String(tm[2]).padStart(2, "0"));
+      else {
+        tm = line.match(/([01]?\d|2[0-3])時(?:(\d{1,2})分)?/);
+        if (tm) time = "".concat(String(tm[1]).padStart(2, "0"), ":").concat(String(tm[2] || 0).padStart(2, "0"));
+      }
+      if (date) break;
+    }
+    return { date, time };
+  }
+  function parseSource(text) {
+    const lines = text.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+    const matches = findCatalogMatches(text);
+    const categories = categoriesFromText(text, matches);
+    const category = categories[0];
+    const store = detectStore(lines);
+    const dates = detectDates(text);
+    const resultAnnouncement = detectResultAnnouncement(text, dates.deadline);
+    const fulfillment = /全国配送/.test(text) ? "\u5168\u56FD\u914D\u9001" : /配送|発送/.test(text) ? "\u914D\u9001" : /店舗受取|店舗での受け取り|店頭受取/.test(text) ? "\u5E97\u8217\u53D7\u53D6" : "\u672A\u78BA\u8A8D";
+    const membership = /会員登録が必要|会員登録必要|会員登録|アプリ会員|メンバー登録/.test(text);
+    const membership_label = /アプリ会員限定/.test(text) ? "\u30A2\u30D7\u30EA\u4F1A\u54E1\u9650\u5B9A" : /会員登録が必要/.test(text) ? "\u4F1A\u54E1\u767B\u9332\u304C\u5FC5\u8981" : "";
+    const extra_requirement = /プレイヤー\s*ID(?:が)?(?:必要|必須)/i.test(text) ? "\u30D7\u30EC\u30A4\u30E4\u30FCID\u5FC5\u9808" : "";
+    const application_method = /アプリから応募|アプリで応募|アプリ応募/.test(text) ? "\u30A2\u30D7\u30EA" : /店頭で応募|店舗で応募/.test(text) ? "\u5E97\u982D" : /応募フォーム|エントリー/.test(text) ? "Web" : "\u672A\u78BA\u8A8D";
+    const title = detectTitle(lines, store, matches);
+    const links = parseLinks(text);
+    const notes = [];
+    if (/全国配送/.test(text)) notes.push("\u5168\u56FD\u914D\u9001");
+    return { store, category, categories, title, start_date: dates.start, deadline_date: dates.deadline || todayJST(), deadline_time: dates.deadlineTime, fulfillment, application_method, membership_required: membership, membership_label, extra_requirement, result_announcement_date: resultAnnouncement.date || null, result_announcement_time: resultAnnouncement.time || null, note: notes.join(" / "), links };
+  }
+  function renderLinkEditor(containerId, links, kind) {
+    const box = $(containerId);
+    box.innerHTML = "";
+    links.forEach((l, i) => {
+      const row = document.createElement("div");
+      row.className = "link-row";
+      row.innerHTML = '\n          <select class="control" data-link-type="'.concat(i, '">\n            <option value="entry" ').concat(l.type === "entry" ? "selected" : "", '>\u5FDC\u52DF</option>\n            <option value="member" ').concat(l.type === "member" ? "selected" : "", '>\u4F1A\u54E1\u767B\u9332</option>\n            <option value="store" ').concat(l.type === "store" ? "selected" : "", '>\u5E97\u8217</option>\n            <option value="detail" ').concat(l.type === "detail" ? "selected" : "", '>\u8A73\u7D30</option>\n          </select>\n          <input class="control" data-link-label="').concat(i, '" value="').concat(esc(l.label), '" placeholder="\u30EA\u30F3\u30AF\u540D">\n          <button class="link-remove" data-link-remove="').concat(i, '">\xD7</button>\n          <input class="control" data-link-url="').concat(i, '" value="').concat(esc(l.url), '" placeholder="URL" style="grid-column:1/3">\n        ');
+      box.appendChild(row);
+    });
+    box.querySelectorAll("[data-link-type]").forEach((el) => el.addEventListener("change", () => links[+el.dataset.linkType].type = el.value));
+    box.querySelectorAll("[data-link-label]").forEach((el) => el.addEventListener("input", () => links[+el.dataset.linkLabel].label = el.value));
+    box.querySelectorAll("[data-link-url]").forEach((el) => el.addEventListener("input", () => links[+el.dataset.linkUrl].url = el.value));
+    box.querySelectorAll("[data-link-remove]").forEach((el) => el.addEventListener("click", () => {
+      links.splice(+el.dataset.linkRemove, 1);
+      renderLinkEditor(containerId, links, kind);
+    }));
+  }
+  function fillPreview(data) {
+    $("pStore").value = data.store;
+    renderCategorySelector("pCategorySelector", data.categories || [data.category]);
+    $("pTitle").value = data.title;
+    $("pStart").value = data.start_date || "";
+    $("pDeadline").value = data.deadline_date || "";
+    $("pDeadlineTime").value = data.deadline_time || "";
+    $("pResultDate").value = data.result_announcement_date || "";
+    $("pResultTime").value = data.result_announcement_time || "";
+    $("pPickup").value = data.fulfillment;
+    $("pApplyMethod").value = data.application_method || "\u672A\u78BA\u8A8D";
+    $("pMembership").value = data.membership_required ? "required" : "not_required";
+    $("pMembershipLabel").value = data.membership_label || "";
+    $("pExtraRequirement").value = data.extra_requirement || "";
+    $("pNote").value = cleanDisplayNote(data.note) || "";
+    previewLinks = data.links.map((x) => ({ ...x }));
+    renderLinkEditor("pLinks", previewLinks, "preview");
+    $("previewArea").classList.add("show");
+  }
+  function previewPayload() {
+    const categories = getCategorySelection("pCategorySelector");
+    const previewTypeEl = $("pOpportunityType");
+    const previewIsLottery = !previewTypeEl || previewTypeEl.value === "lottery";
+    return {
+      store: $("pStore").value.trim() || "\u5E97\u8217\u672A\u8A2D\u5B9A",
+      category: categories[0],
+      categories,
+      title: $("pTitle").value.trim() || "\u62BD\u9078\u5546\u54C1",
+      start_date: $("pStart").value || null,
+      deadline_date: $("pDeadline").value || todayJST(),
+      deadline_time: $("pDeadlineTime").value || null,
+      result_announcement_date: previewIsLottery ? ($("pResultDate").value || null) : null,
+      result_announcement_time: previewIsLottery ? ($("pResultTime").value || null) : null,
+      fulfillment: $("pPickup").value,
+      application_method: $("pApplyMethod").value,
+      membership_required: $("pMembership").value === "required",
+      membership_label: $("pMembershipLabel").value.trim(),
+      extra_requirement: $("pExtraRequirement").value.trim(),
+      note: cleanDisplayNote($("pNote").value.trim()),
+      links: previewLinks.filter((x) => {
+        var _a;
+        return (_a = x.url) == null ? void 0 : _a.trim();
+      }).map((x, i) => ({ ...x, sort_order: i + 1 })),
+      is_active: true
+    };
+  }
+  async function createLottery(payload) {
+    if (mode === "demo") {
+      const item = { ...payload, id: rid(), created_at: (/* @__PURE__ */ new Date()).toISOString() };
+      lotteries.unshift(item);
+      persistDemo();
+      renderAdminLotteries();
+      renderMember();
+      toast("\u5168\u4F1A\u54E1\u5411\u3051\u62BD\u9078\u3092\u767B\u9332\u3057\u307E\u3057\u305F");
+      return;
+    }
+    const { data, error } = await supabase.from("lotteries").insert({
+      store: payload.store,
+      category: payload.category,
+      categories: payload.categories,
+      title: payload.title,
+      start_date: payload.start_date,
+      deadline_date: payload.deadline_date,
+      deadline_time: payload.deadline_time || null,
+      result_announcement_date: payload.result_announcement_date || null,
+      result_announcement_time: payload.result_announcement_time || null,
+      fulfillment: payload.fulfillment,
+      application_method: payload.application_method || "\u672A\u78BA\u8A8D",
+      membership_required: payload.membership_required,
+      membership_label: payload.membership_label || "",
+      extra_requirement: payload.extra_requirement || "",
+      note: cleanDisplayNote(payload.note),
+      is_active: true,
+      created_by: session.user.id,
+      source_type: "manual",
+      needs_review: false
+    }).select().single();
+    if (error) {
+      console.error(error);
+      toast("\u62BD\u9078\u767B\u9332\u306B\u5931\u6557\u3057\u307E\u3057\u305F");
+      return;
+    }
+    if (payload.links.length) {
+      const rows = payload.links.map((l, i) => ({ lottery_id: data.id, label: l.label, url: l.url, type: l.type, sort_order: i + 1 }));
+      const lr = await supabase.from("lottery_links").insert(rows);
+      if (lr.error) console.error(lr.error);
+    }
+    await loadAllData();
+    toast("\u5168\u4F1A\u54E1\u3078\u53CD\u6620\u3057\u307E\u3057\u305F");
+  }
+  function updateEditOpportunityFields() {
+    const type = $("eOpportunityType") ? $("eOpportunityType").value : "lottery";
+    const extra = $("eOpportunityExtraFields");
+    if (extra) extra.classList.toggle("hidden", type === "lottery");
+    document.querySelectorAll(".tom-edit-result-field").forEach((el) => el.style.display = type === "lottery" ? "" : "none");
+  }
+  function openEdit(id) {
+    const x = lotteries.find((v) => v.id === id);
+    if (!x) return;
+    editingId = id;
+    $("eOpportunityType").value = x.opportunity_type || "lottery";
+    $("ePaymentTiming").value = x.payment_timing || "unknown";
+    $("ePaymentAmount").value = x.payment_amount === null || x.payment_amount === undefined ? "" : String(x.payment_amount);
+    $("eShippingEstimate").value = x.shipping_estimate || "";
+    updateEditOpportunityFields();
+    $("eStore").value = x.store;
+    renderCategorySelector("eCategorySelector", x.categories || [x.category]);
+    $("eTitle").value = x.title;
+    $("eStart").value = x.start_date || "";
+    $("eDeadline").value = x.deadline_date || "";
+    $("eDeadlineTime").value = cleanTime(x.deadline_time);
+    $("eResultDate").value = x.result_announcement_date || "";
+    $("eResultTime").value = cleanTime(x.result_announcement_time);
+    $("ePickup").value = x.fulfillment || "\u672A\u78BA\u8A8D";
+    $("eApplyMethod").value = x.application_method || "\u672A\u78BA\u8A8D";
+    $("eMembership").value = x.membership_required ? "required" : "not_required";
+    $("eMembershipLabel").value = x.membership_label || "";
+    $("eExtraRequirement").value = x.extra_requirement || "";
+    $("eNote").value = cleanDisplayNote(x.note) || "";
+    editLinks = (x.links || []).map((v) => ({ ...v }));
+    renderLinkEditor("eLinks", editLinks, "edit");
+    $("editBackdrop").classList.add("show");
+  }
+  async function saveEdit() {
+    const x = lotteries.find((v) => v.id === editingId);
+    if (!x) return;
+    const categories = getCategorySelection("eCategorySelector");
+    const patch = {
+      opportunity_type: $("eOpportunityType").value || "lottery",
+      payment_timing: $("eOpportunityType").value === "lottery" ? "unknown" : ($("ePaymentTiming").value || "unknown"),
+      payment_amount: $("eOpportunityType").value === "lottery" || $("ePaymentAmount").value === "" ? null : Number($("ePaymentAmount").value),
+      shipping_estimate: $("eOpportunityType").value === "lottery" ? null : ($("eShippingEstimate").value.trim() || null),
+      result_announcement_date: $("eOpportunityType").value === "lottery" ? ($("eResultDate").value || null) : null,
+      result_announcement_time: $("eOpportunityType").value === "lottery" ? ($("eResultTime").value || null) : null,
+      store: $("eStore").value.trim() || "\u5E97\u8217\u672A\u8A2D\u5B9A",
+      category: categories[0],
+      categories,
+      title: $("eTitle").value.trim() || "\u62BD\u9078\u5546\u54C1",
+      start_date: $("eStart").value || null,
+      deadline_date: $("eDeadline").value || todayJST(),
+      deadline_time: $("eDeadlineTime").value || null,
+      fulfillment: $("ePickup").value,
+      application_method: $("eApplyMethod").value,
+      membership_required: $("eMembership").value === "required",
+      membership_label: $("eMembershipLabel").value.trim(),
+      extra_requirement: $("eExtraRequirement").value.trim(),
+      note: cleanDisplayNote($("eNote").value.trim()),
+      links: editLinks.filter((l) => {
+        var _a;
+        return (_a = l.url) == null ? void 0 : _a.trim();
+      }).map((l, i) => ({ ...l, sort_order: i + 1 }))
+    };
+    if (mode === "demo") {
+      Object.assign(x, patch);
+      persistDemo();
+      $("editBackdrop").classList.remove("show");
+      renderAll();
+      toast("\u5168\u4F1A\u54E1\u5411\u3051\u60C5\u5831\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F");
+      return;
+    }
+    const { error } = await supabase.from("lotteries").update({
+      opportunity_type: patch.opportunity_type,
+      payment_timing: patch.payment_timing,
+      payment_amount: patch.payment_amount,
+      shipping_estimate: patch.shipping_estimate,
+      result_announcement_date: patch.result_announcement_date,
+      result_announcement_time: patch.result_announcement_time,
+      store: patch.store,
+      category: patch.category,
+      categories: patch.categories,
+      title: patch.title,
+      start_date: patch.start_date,
+      deadline_date: patch.deadline_date,
+      deadline_time: patch.deadline_time,
+      fulfillment: patch.fulfillment,
+      application_method: patch.application_method,
+      membership_required: patch.membership_required,
+      membership_label: patch.membership_label,
+      extra_requirement: patch.extra_requirement,
+      note: cleanDisplayNote(patch.note),
+      needs_review: false,
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    }).eq("id", editingId);
+    if (error) {
+      toast("\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F");
+      console.error(error);
+      return;
+    }
+    await supabase.from("lottery_links").delete().eq("lottery_id", editingId);
+    if (patch.links.length) await supabase.from("lottery_links").insert(patch.links.map((l, i) => ({ lottery_id: editingId, label: l.label, url: l.url, type: l.type, sort_order: i + 1 })));
+    $("editBackdrop").classList.remove("show");
+    await loadAllData();
+    toast("\u5168\u4F1A\u54E1\u3078\u66F4\u65B0\u3092\u53CD\u6620\u3057\u307E\u3057\u305F");
+  }
+  async function deleteLottery(id) {
+    if (!confirm("\u3053\u306E\u62BD\u9078\u3092\u5168\u4F1A\u54E1\u306E\u4E00\u89A7\u304B\u3089\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F")) return;
+    if (mode === "demo") {
+      lotteries = lotteries.filter((x) => x.id !== id);
+      progressMap.delete(id);
+      persistDemo();
+      renderAll();
+      return;
+    }
+    const { error } = await supabase.from("lotteries").delete().eq("id", id);
+    if (error) {
+      toast("\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F");
+      console.error(error);
+      return;
+    }
+    await loadAllData();
+  }
+  async function migrateV1Cloud() {
+    let old = [];
+    try {
+      old = JSON.parse(localStorage.getItem(V1_KEY) || "[]");
+    } catch {
+    }
+    if (!Array.isArray(old) || !old.length) {
+      toast("\u3053\u306E\u7AEF\u672B\u306BV1\u30C7\u30FC\u30BF\u304C\u3042\u308A\u307E\u305B\u3093");
+      return;
+    }
+    if (mode === "demo") {
+      toast("\u30C7\u30E2\u306F\u521D\u56DE\u8D77\u52D5\u6642\u306B\u81EA\u52D5\u79FB\u884C\u6E08\u307F\u3067\u3059");
+      return;
+    }
+    let count = 0;
+    for (const x of old) {
+      const payload = {
+        store: x.store || "\u5E97\u8217\u672A\u8A2D\u5B9A",
+        category: x.category || "other",
+        categories: [x.category || "other"],
+        title: x.title || "\u62BD\u9078\u5546\u54C1",
+        start_date: x.start || null,
+        deadline_date: x.deadline || todayJST(),
+        deadline_time: x.deadlineTime || null,
+        fulfillment: x.pickup || "\u672A\u78BA\u8A8D",
+        application_method: x.application_method || "Web",
+        membership_required: x.membership === "required",
+        membership_label: x.membership_label || "",
+        extra_requirement: x.extra_requirement || "",
+        note: cleanDisplayNote(x.note || ""),
+        links: (x.links || []).map((l, i) => ({ label: l.label, url: l.url, type: l.type || "detail", sort_order: i + 1 }))
+      };
+      const { links, ...lotteryFields } = payload;
+      const { data, error } = await supabase.from("lotteries").insert({ ...lotteryFields, created_by: session.user.id, is_active: true }).select().single();
+      if (error) continue;
+      if (links.length) await supabase.from("lottery_links").insert(links.map((l) => ({ ...l, lottery_id: data.id })));
+      count++;
+    }
+    await loadAllData();
+    toast("".concat(count, "\u4EF6\u3092\u672C\u756ADB\u3078\u79FB\u884C\u3057\u307E\u3057\u305F"));
+  }
+  async function doLogin() {
+    const email = $("loginEmail").value.trim(), password = $("loginPassword").value;
+    if (!email || !password) {
+      toast("\u30E1\u30FC\u30EB\u3068\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044");
+      return;
+    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      toast("\u30ED\u30B0\u30A4\u30F3\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F");
+      console.error(error);
+      return;
+    }
+    session = data.session;
+    await loadCloudProfile();
+    await loadAllData();
+    setupRealtime();
+    showApp();
+  }
+  async function doSignup() {
+    const email = $("loginEmail").value.trim(), password = $("loginPassword").value;
+    if (!email || password.length < 6) {
+      toast("\u30E1\u30FC\u30EB\u30686\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044");
+      return;
+    }
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      toast("\u65B0\u898F\u767B\u9332\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F");
+      console.error(error);
+      return;
+    }
+    toast(data.session ? "\u767B\u9332\u3057\u307E\u3057\u305F\u3002\u627F\u8A8D\u5F85\u3061\u3067\u3059" : "\u78BA\u8A8D\u30E1\u30FC\u30EB\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044");
+    if (data.session) {
+      session = data.session;
+      await new Promise((r) => setTimeout(r, 600));
+      await loadCloudProfile();
+      await loadAllData();
+      showApp();
+    }
+  }
+  async function logout() {
+    if (mode === "cloud" && supabase) await supabase.auth.signOut();
+    session = null;
+    profile = null;
+    mode = "none";
+    showAuth(loadConfig() ? "login" : "choice");
+  }
+  renderCategorySelector("pCategorySelector", ["other"]);
+  renderCategorySelector("eCategorySelector", ["other"]);
+  $("eOpportunityType").addEventListener("change", updateEditOpportunityFields);
+  updateEditOpportunityFields();
+  $("startDemoBtn").addEventListener("click", initDemo);
+  $("saveSetupBtn").addEventListener("click", () => {
+    const u = $("setupUrl").value.trim(), k = $("setupKey").value.trim();
+    if (!u || !k) {
+      toast("URL\u3068\u516C\u958B\u30AD\u30FC\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044");
+      return;
+    }
+    saveConfig(u, k);
+    location.reload();
+  });
+  $("backSetupBtn").addEventListener("click", () => showAuth("choice"));
+  $("loginBtn").addEventListener("click", doLogin);
+  $("signupBtn").addEventListener("click", doSignup);
+  $("logoutBtn").addEventListener("click", logout);
+  $("copyMailAddressBtn").addEventListener("click", () => copyText(mailForwardAddress(), "\u5C02\u7528\u30A2\u30C9\u30EC\u30B9\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F"));
+  $("openMailSetupBtn").addEventListener("click", openMailSetup);
+  $("refreshMailBtn").addEventListener("click", refreshMailData);
+  $("closeMailSetupBtn").addEventListener("click", () => $("mailSetupBackdrop").classList.remove("show"));
+  $("mailSetupBackdrop").addEventListener("click", (e) => {
+    if (e.target === $("mailSetupBackdrop")) $("mailSetupBackdrop").classList.remove("show");
+  });
+  $("copyMailAddressModalBtn").addEventListener("click", () => copyText(mailForwardAddress(), "\u5C02\u7528\u30A2\u30C9\u30EC\u30B9\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F"));
+  $("copyMailFilterBtn").addEventListener("click", () => copyText($("mailFilterQuery").textContent, "\u30D5\u30A3\u30EB\u30BF\u30FC\u6761\u4EF6\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F"));
+  $("refreshMailModalBtn").addEventListener("click", async () => {
+    await refreshMailData();
+    openMailSetup();
+  });
+  $("memberTabBtn").addEventListener("click", () => {
+    roleView = "member";
+    renderRoleTabs();
+    renderMember();
+  });
+  $("adminTabBtn").addEventListener("click", () => {
+    if (!currentIsAdmin()) return;
+    roleView = "admin";
+    renderRoleTabs();
+    renderAdmin();
+  });
+  $("searchInput").addEventListener("input", renderMember);
+  $("statusFilter").addEventListener("change", renderMember);
+  $("sortSelect").addEventListener("change", renderMember);
+  document.querySelectorAll("#categoryFilters [data-cat]").forEach((btn) => btn.addEventListener("click", () => {
+    activeCategory = btn.dataset.cat;
+    document.querySelectorAll("#categoryFilters [data-cat]").forEach((b) => b.classList.toggle("active", b === btn));
+    renderMember();
+  }));
+  document.querySelectorAll("[data-admin-section]").forEach((btn) => btn.addEventListener("click", () => {
+    adminSection = btn.dataset.adminSection;
+    renderAdmin();
+  }));
+  $("refreshMembersBtn").addEventListener("click", async () => {
+    if (mode === "cloud") await loadProfiles();
+    renderMembers();
+  });
+  $("toggleAddBtn").addEventListener("click", () => $("addCard").classList.toggle("open"));
+  $("clearSourceBtn").addEventListener("click", () => {
+    $("sourceText").value = "";
+    $("previewArea").classList.remove("show");
+  });
+  $("analyzeBtn").addEventListener("click", () => {
+    const t = $("sourceText").value.trim();
+    if (!t) {
+      toast("\u62BD\u9078\u60C5\u5831\u3092\u8CBC\u308A\u4ED8\u3051\u3066\u304F\u3060\u3055\u3044");
+      return;
+    }
+    fillPreview(parseSource(t));
+    toast("\u89E3\u6790\u3057\u307E\u3057\u305F\u3002\u5185\u5BB9\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044");
+  });
+  $("addLinkBtn").addEventListener("click", () => {
+    previewLinks.push({ label: "\u5FDC\u52DF\u30D5\u30A9\u30FC\u30E0", url: "", type: "entry", sort_order: previewLinks.length + 1 });
+    renderLinkEditor("pLinks", previewLinks, "preview");
+  });
+  $("savePreviewBtn").addEventListener("click", async () => {
+    await createLottery(previewPayload());
+    $("sourceText").value = "";
+    $("previewArea").classList.remove("show");
+    $("addCard").classList.remove("open");
+  });
+  $("closeEditBtn").addEventListener("click", () => $("editBackdrop").classList.remove("show"));
+  $("editBackdrop").addEventListener("click", (e) => {
+    if (e.target === $("editBackdrop")) $("editBackdrop").classList.remove("show");
+  });
+  $("editAddLinkBtn").addEventListener("click", () => {
+    editLinks.push({ label: "\u5FDC\u52DF\u30D5\u30A9\u30FC\u30E0", url: "", type: "entry", sort_order: editLinks.length + 1 });
+    renderLinkEditor("eLinks", editLinks, "edit");
+  });
+  $("saveEditBtn").addEventListener("click", saveEdit);
+  $("addCatalogBtn").addEventListener("click", addCatalog);
+  $("migrateV1Btn").addEventListener("click", migrateV1Cloud);
+  $("saveMailDomainBtn").addEventListener("click", saveMailDomain);
+  function openConfig() {
+    const c = loadConfig() || {};
+    $("configUrl").value = c.url || "";
+    $("configKey").value = c.key || "";
+    $("configBackdrop").classList.add("show");
+  }
+  $("configBtn").addEventListener("click", openConfig);
+  $("openConfigFromTools").addEventListener("click", openConfig);
+  $("closeConfigBtn").addEventListener("click", () => $("configBackdrop").classList.remove("show"));
+  $("configBackdrop").addEventListener("click", (e) => {
+    if (e.target === $("configBackdrop")) $("configBackdrop").classList.remove("show");
+  });
+  $("saveConfigBtn").addEventListener("click", () => {
+    const u = $("configUrl").value.trim(), k = $("configKey").value.trim();
+    if (!u || !k) {
+      toast("URL\u3068\u516C\u958B\u30AD\u30FC\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044");
+      return;
+    }
+    saveConfig(u, k);
+    location.reload();
+  });
+  $("clearConfigBtn").addEventListener("click", () => {
+    if (confirm("Supabase\u63A5\u7D9A\u8A2D\u5B9A\u3092\u524A\u9664\u3057\u3066\u30C7\u30E2\u9078\u629E\u753B\u9762\u3078\u623B\u308A\u307E\u3059\u304B\uFF1F")) {
+      localStorage.removeItem(CONFIG_KEY);
+      location.reload();
+    }
+  });
+  $("modeBadge").addEventListener("click", () => {
+    if (mode !== "demo") return;
+    const next = profile.role === "admin" ? "member" : "admin";
+    localStorage.setItem("tom_lottery_v2_demo_role", next);
+    profile = { ...profile, role: next, email: next === "admin" ? "admin@demo.local" : "member@demo.local", display_name: next === "admin" ? "\u904B\u55B6\u30C7\u30E2" : "\u4F1A\u54E1\u30C7\u30E2" };
+    roleView = next === "admin" ? "admin" : "member";
+    showApp();
+    renderAll();
+    toast(next === "admin" ? "\u904B\u55B6\u30C7\u30E2\u3078\u5207\u66FF" : "\u4F1A\u54E1\u30C7\u30E2\u3078\u5207\u66FF");
+  });
+  init();
+})();
+</script>
+
+<script src="./compat/loss-review-v2.25.js?v=2.34.0"></script>
+<script src="./compat/mail-ui-cleanup-v2.25.js?v=2.34.0"></script>
+<script src="./compat/progress-polish-fast-v2.39.js?v=2.39.0"></script>
+<script src="./compat/mail-settings-v2.27.js?v=2.34.0"></script>
+<script src="./compat/hide-mail-badges-v2.27.js?v=2.34.0"></script>
+<script src="./compat/member-admin-v2.27.js?v=2.34.0"></script>
+<script src="./compat/auth-flow-v2.28.js?v=2.34.0"></script>
+
+<script src="./swipe-archive-v2.35.js?v=2.35.1"></script>
+
+<script src="./member-polish-fast-v2.39.js?v=2.39.0"></script>
+
+<script src="./winner-deadlines-fast-v2.39.js?v=2.39.0"></script>
+
+<script src="./winner-top-deadlines-fast-v2.39.js?v=2.39.0"></script>
+
+<script src="./regions-archive-v2.40.js?v=2.40.0"></script>
+
+<script src="./mail-wizard-stable-v2.44.js?v=2.44.0"></script>
+
+<script src="./opportunity-types-stable-v2.43.js?v=2.43.0"></script>
+
+<script src="./ui-stability-v2.45.js?v=2.45.0"></script>
+<script src="./mail-status-v2.45.js?v=2.45.0"></script>
+
+<script src="./entry-parser-v2.46.js?v=2.46.0"></script>
+
+<script src="./entry-deadline-fix-v2.47.js?v=2.47.0"></script>
+
+<script src="./entry-shipping-fix-v2.48.js?v=2.48.0"></script>
+
+<script src="./entry-type-filter-stable-v2.50.js?v=2.50.0"></script>
+
+<script src="./lottery-result-ui-v2.51.js?v=2.51.0"></script>
+</body>
+</html>
