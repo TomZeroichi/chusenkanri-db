@@ -24,13 +24,31 @@ jobs:
           from pathlib import Path
           src = Path('preview-v2.45.html').read_text(encoding='utf-8')
           html = src.replace('V2.45', 'V2.46')
+          replacements = {
+              '<title>TOM 応募・抽選マネージャー V2.46</title>': '<title>TOM エントリーマネージャー V2.46</title>',
+              '<h1>抽選エントリー管理</h1>': '<h1>TOM エントリーマネージャー</h1>',
+              '<p>運営共通データ × 会員ごとの個別進捗</p>': '<p>抽選・応募・限定受注・キャンペーンをまとめて管理</p>',
+              '<h2>抽選一覧</h2>': '<h2>エントリー一覧</h2>',
+              '該当する抽選がありません。': '該当するエントリーがありません。',
+              '>抽選管理</button>': '>エントリー管理</button>',
+              '<h3>新しい抽選を追加</h3>': '<h3>新しいエントリーを追加</h3>',
+              '<p>投稿文をそのまま貼り付けて解析</p>': '<p>投稿文・案内文をそのまま貼り付けて解析</p>',
+              'placeholder="抽選情報をここに貼り付けてください"': 'placeholder="抽選・全員サービス・限定受注・キャンペーン情報をここに貼り付けてください"',
+              '店舗名・商品名・受付期間・締切時刻・受取方法・会員登録・URLを自動認識します。': '案件種別・主催/店舗・商品名・受付期間・締切・支払・発送予定・URLを自動認識します。',
+              '「会員登録」「応募フォーム」などURL直前の見出しを優先してリンク名を判定します。': '解析できなかった項目は「未確認」で表示します。内容を確認してから登録してください。',
+              '<h2>運営登録済み抽選</h2>': '<h2>運営登録済みエントリー</h2>',
+              '<h3>抽選情報を編集（運営共通）</h3>': '<h3>エントリー情報を編集（運営共通）</h3>',
+              'このアカウントはまだ有料会員として有効化されていません。運営による承認後に抽選一覧を利用できます。': 'このアカウントはまだ有料会員として有効化されていません。運営による承認後にエントリー一覧を利用できます。'
+          }
+          for old, new in replacements.items():
+              html = html.replace(old, new)
           patch = '\n<script src="./entry-parser-v2.46.js?v=2.46.0"></script>\n'
           if 'entry-parser-v2.46.js' not in html:
               html = html.replace('</body>', patch + '</body>')
           Path('preview-v2.46.html').write_text(html, encoding='utf-8')
 
           index = '''<!doctype html>
-          <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.46.html?v=2461"><title>TOM エントリーマネージャー</title><script>location.replace('./preview-v2.46.html?v=2461');</script></head><body><p><a href="./preview-v2.46.html?v=2461">TOM エントリーマネージャー V2.46 を開く</a></p></body></html>'''
+          <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0; url=./preview-v2.46.html?v=2462"><title>TOM エントリーマネージャー</title><script>location.replace('./preview-v2.46.html?v=2462');</script></head><body><p><a href="./preview-v2.46.html?v=2462">TOM エントリーマネージャー V2.46 を開く</a></p></body></html>'''
           Path('index.html').write_text(index, encoding='utf-8')
           PY
 
