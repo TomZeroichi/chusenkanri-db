@@ -1,0 +1,30 @@
+name: Fix V2.51 Detail Deadline Time
+
+on:
+  push:
+    paths:
+      - 'preview-v2.51.html'
+      - 'scripts/fix_v251_detail.py'
+      - '.github/workflows/fix-v251-detail.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fix expanded deadline time
+        run: python scripts/fix_v251_detail.py
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.51.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix V2.51 expanded deadline time"
+          git push
