@@ -1,0 +1,32 @@
+name: Build V2.54 Performance Release
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v254.yml'
+      - 'build-v254.py'
+      - 'member-polish-lite-v2.54.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build V2.54
+        run: python build-v254.py
+
+      - name: Commit V2.54
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.54.html index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.54 performance release"
+          git push
