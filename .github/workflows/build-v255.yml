@@ -31,7 +31,8 @@ jobs:
             opportunity-types-fast-v2.55.js \
             regions-archive-fast-v2.55.js \
             events-newbadges-fast-v2.55.js \
-            events-stability-fast-v2.55.js
+            events-stability-fast-v2.55.js \
+            member-polish-lite-v2.55.js
           git diff --cached --quiet && exit 0
           git commit -m "Generate V2.55 full member performance release"
           git push
