@@ -1,0 +1,38 @@
+name: Build V2.58 Mail Visibility Fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v258.yml'
+      - 'scripts/build-v258.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build V2.58
+        run: python scripts/build-v258.py
+
+      - name: Verify legacy mail compactor is removed
+        run: |
+          ! grep -F 'mail-settings-v2.27.js' preview-v2.58.html
+          grep -F 'preview-v2.58.html?v=2581' index.html
+          grep -F 'mail-status-v2.45.js' preview-v2.58.html
+
+      - name: Commit V2.58
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.58.html index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.58 mail visibility fix release"
+          git push
