@@ -1,0 +1,54 @@
+name: Build V2.56 Event Driven Performance
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v256.yml'
+      - 'scripts/build-v256.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build V2.56
+        run: python scripts/build-v256.py
+
+      - name: Check generated JavaScript
+        run: |
+          node --check compat/progress-polish-event-v2.56.js
+          node --check swipe-archive-fast-v2.56.js
+          node --check winner-deadlines-event-v2.56.js
+          node --check winner-top-deadlines-event-v2.56.js
+
+      - name: Verify heavy polling is removed
+        shell: bash
+        run: |
+          ! grep -F 'observer.observe(document.documentElement' swipe-archive-fast-v2.56.js
+          ! grep -F 'setInterval(loadState' swipe-archive-fast-v2.56.js
+          ! grep -F 'observer.observe(document.documentElement' winner-deadlines-event-v2.56.js
+          ! grep -F 'setInterval(loadState' winner-deadlines-event-v2.56.js
+          ! grep -F 'observer.observe(document.documentElement' winner-top-deadlines-event-v2.56.js
+          ! grep -F 'setInterval(loadState' winner-top-deadlines-event-v2.56.js
+          ! grep -F 'setInterval(load, 2e4)' compat/progress-polish-event-v2.56.js
+
+      - name: Commit V2.56
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.56.html index.html \
+            compat/progress-polish-event-v2.56.js \
+            swipe-archive-fast-v2.56.js \
+            winner-deadlines-event-v2.56.js \
+            winner-top-deadlines-event-v2.56.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.56 event-driven performance release"
+          git push
