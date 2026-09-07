@@ -1,0 +1,48 @@
+name: Build V2.57 Core Owned Visibility
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v257.yml'
+      - 'scripts/build-v257.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build V2.57
+        run: python scripts/build-v257.py
+
+      - name: Check generated JavaScript
+        run: |
+          node --check compat/progress-polish-safe-v2.57.js
+          node --check opportunity-types-safe-v2.57.js
+          node --check regions-archive-safe-v2.57.js
+
+      - name: Verify visibility ownership
+        run: |
+          ! grep -F 'card.style.display = "none"' compat/progress-polish-safe-v2.57.js
+          ! grep -F "classList.add('tom-type-hidden-v242')" opportunity-types-safe-v2.57.js
+          ! grep -F "classList.add('tom-region-hidden-v240')" regions-archive-safe-v2.57.js
+          grep -F 'preview-v2.57.html?v=2571' index.html
+
+      - name: Commit V2.57
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.57.html index.html \
+            compat/progress-polish-safe-v2.57.js \
+            opportunity-types-safe-v2.57.js \
+            regions-archive-safe-v2.57.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.57 core-owned visibility release"
+          git push
