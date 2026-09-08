@@ -1,0 +1,41 @@
+name: Build V2.59 Opportunity Tab Placement
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-v259.yml'
+      - 'scripts/build-v259.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build V2.59
+        run: python scripts/build-v259.py
+
+      - name: Check generated JavaScript
+        run: node --check opportunity-types-listhead-v2.59.js
+
+      - name: Verify tab placement
+        run: |
+          grep -F "insertBefore(nav,listHead)" opportunity-types-listhead-v2.59.js
+          grep -F 'opportunity-types-listhead-v2.59.js?v=2.59.0' preview-v2.59.html
+          grep -F 'preview-v2.59.html?v=2591' index.html
+
+      - name: Commit V2.59
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v2.59.html index.html opportunity-types-listhead-v2.59.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate V2.59 opportunity tab placement release"
+          git push
